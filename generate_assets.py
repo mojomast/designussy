@@ -13,18 +13,18 @@ def create_noise_layer(width, height, scale=1.0, opacity=128):
     img = Image.fromarray(noise_data, mode='L')
     return img
 
-def create_void_parchment(index):
+def create_void_parchment(index=None, base_color=(15, 15, 18), noise_scale=1.5):
     width, height = 1024, 1024
-    base_color = (15, 15, 18) # Dark charcoal/black
+    # base_color passed in arg
     
     img = Image.new('RGB', (width, height), base_color)
     
     # Layer 1: Heavy Grain
-    noise = create_noise_layer(width, height, scale=1.5)
+    noise = create_noise_layer(width, height, scale=noise_scale)
     img.paste(ImageOps.colorize(noise, (0,0,0), (40,40,45)), (0,0), mask=None)
     
     # Layer 2: Scratches/Texture (simulated by stretching noise)
-    scratches = create_noise_layer(width, height, scale=2.0)
+    scratches = create_noise_layer(width, height, scale=noise_scale + 0.5)
     scratches = scratches.resize((width, height // 10))
     scratches = scratches.resize((width, height), Image.BICUBIC)
     img = Image.blend(img, scratches.convert('RGB'), 0.1)
@@ -45,7 +45,7 @@ def create_void_parchment(index):
         print(f"Generated {filename}")
     return img
 
-def create_ink_enso(index=None):
+def create_ink_enso(index=None, color=(0,0,0), complexity=40, chaos=1.0):
     width, height = 800, 800
     img = Image.new('RGBA', (width, height), (0, 0, 0, 0))
     draw = ImageDraw.Draw(img)
@@ -54,9 +54,11 @@ def create_ink_enso(index=None):
     radius = 300
     
     # Draw multiple irregular rings to simulate brush bristles
-    for _ in range(40):
+    # Complexity determines number of strands
+    for _ in range(complexity):
         points = []
-        current_radius = radius + random.randint(-30, 30)
+        # Chaos determines radial variance
+        current_radius = radius + random.randint(int(-30 * chaos), int(30 * chaos))
         thickness = random.randint(2, 15)
         
         # Random start and end angle for the "stroke"
@@ -71,7 +73,9 @@ def create_ink_enso(index=None):
             points.append((x, y))
             
         if len(points) > 1:
-            draw.line(points, fill=(0, 0, 0, random.randint(50, 200)), width=thickness)
+            # Apply alpha to color
+            stroke_color = color + (random.randint(50, 200),) if len(color) == 3 else color
+            draw.line(points, fill=stroke_color, width=thickness)
             
     # Blur to simulate ink bleed
     img = img.filter(ImageFilter.GaussianBlur(radius=1))
@@ -179,6 +183,83 @@ def create_giraffe(index=None):
         img.save(filename)
         print(f"Generated {filename}")
     return img
+
+def create_kangaroo(index=None):
+    width, height = 600, 800
+    img = Image.new('RGBA', (width, height), (0, 0, 0, 0))
+    draw = ImageDraw.Draw(img)
+    
+    # Colors
+    ink = (10, 10, 12, 240)
+    parchment = (212, 197, 176, 255)
+    
+    cx, cy = width // 2, height // 2
+    
+    # --- THE POGO STICK ---
+    # Main pole
+    pogo_top = (cx, cy - 50)
+    pogo_bottom = (cx, cy + 250)
+    draw.line([pogo_top, pogo_bottom], fill=ink, width=10)
+    
+    # Handlebars
+    draw.line([(cx-40, cy-40), (cx+40, cy-40)], fill=ink, width=8)
+    
+    # Foot pegs
+    draw.line([(cx-30, cy+180), (cx+30, cy+180)], fill=ink, width=8)
+    
+    # Spring (zig zag chaos)
+    spring_pts = []
+    for i in range(12):
+        off = 15 if i % 2 == 0 else -15
+        spring_pts.append((cx + off, cy + 180 + i*5))
+    if len(spring_pts) > 1:
+        draw.line(spring_pts, fill=ink, width=4)
+
+    # --- THE KANGAROO ---
+    # Tail (thick, balancing)
+    tail_pts = [(cx-40, cy+50), (cx-150, cy+20), (cx-180, cy-50)]
+    draw.line(tail_pts, fill=parchment, width=25)
+    
+    # Body (Ovalish)
+    draw.ellipse((cx-50, cy-100, cx+50, cy+80), fill=parchment)
+    
+    # Head
+    draw.ellipse((cx-30, cy-160, cx+50, cy-90), fill=parchment)
+    
+    # Ears (Long)
+    draw.polygon([(cx, cy-150), (cx-10, cy-220), (cx+10, cy-160)], fill=parchment)
+    draw.polygon([(cx+25, cy-150), (cx+40, cy-210), (cx+35, cy-160)], fill=parchment)
+    
+    # Legs (Bent, on pegs)
+    # Hip to knee
+    draw.line([(cx-20, cy+50), (cx-60, cy+80)], fill=parchment, width=15)
+    draw.line([(cx+20, cy+50), (cx+60, cy+80)], fill=parchment, width=15)
+    # Knee to foot
+    draw.line([(cx-60, cy+80), (cx-25, cy+180)], fill=parchment, width=12)
+    draw.line([(cx+60, cy+80), (cx+25, cy+180)], fill=parchment, width=12)
+    
+    # Arms (Holding handles)
+    draw.line([(cx-30, cy-20), (cx-35, cy-40)], fill=parchment, width=10)
+    draw.line([(cx+30, cy-20), (cx+35, cy-40)], fill=parchment, width=10)
+    
+    # Face details
+    draw.ellipse((cx+10, cy-140, cx+20, cy-130), fill=ink) # Eye
+    
+    # Ink Splatters (Motion)
+    for _ in range(15):
+        sx = random.randint(cx-100, cx+100)
+        sy = random.randint(cy+200, cy+300) # Dust at bottom
+        draw.ellipse((sx, sy, sx+random.randint(2,8), sy+random.randint(2,8)), fill=ink)
+
+    # Apply Ink Bleed
+    img = img.filter(ImageFilter.GaussianBlur(1))
+
+    if index is not None:
+        filename = os.path.join(OUTPUT_DIR, f"kangaroo_{index}.png")
+        img.save(filename)
+        print(f"Generated {filename}")
+    return img
+
 # Need to import ImageOps which I missed
 from PIL import ImageOps
 
@@ -188,5 +269,6 @@ if __name__ == "__main__":
         # create_void_parchment(i)
         # create_ink_enso(i)
         # create_sigil(i)
-        create_giraffe(i)
+        # create_giraffe(i)
+        create_kangaroo(i)
     print("Done! Generator went brrr.")
