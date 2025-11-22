@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Unwritten Worlds - Logo Concepts</title>
+    <style>
+        body {
+            background-color: #1a1a1a;
+            color: #e0e0e0;
+            font-family: 'Georgia', 'Times New Roman', serif;
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 40px;
+            padding: 40px;
+        }
+        .logo-container {
+            background-color: #f4f1ea; /* Parchment color */
+            border-radius: 8px;
+            padding: 20px;
+            width: 300px;
+            height: 300px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+            transition: transform 0.2s;
+        }
+        .logo-container:hover {
+            transform: scale(1.02);
+        }
+        .logo-label {
+            margin-top: 15px;
+            color: #333;
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        svg {
+            width: 200px;
+            height: 200px;
+            overflow: visible;
+        }
+        /* Common styles for the logos */
+        .ink-black { fill: #111; stroke: none; }
+        .ink-stroke { fill: none; stroke: #111; stroke-width: 3; stroke-linecap: round; }
+        .text-main { font-family: 'Georgia', serif; font-weight: bold; fill: #111; text-anchor: middle; }
+    </style>
+</head>
+<body>
+
+    <!-- SVG Filters for Rough/Etched Look -->
+    <svg width="0" height="0" style="position: absolute;">
+        <defs>
+            <filter id="rough-edge">
+                <feTurbulence type="fractalNoise" baseFrequency="0.03" numOctaves="3" result="noise" />
+                <feDisplacementMap in="SourceGraphic" in2="noise" scale="4" />
+            </filter>
+            <filter id="ink-bleed">
+                <feTurbulence type="turbulence" baseFrequency="0.05" numOctaves="2" result="turbulence"/>
+                <feDisplacementMap in2="turbulence" in="SourceGraphic" scale="3" xChannelSelector="R" yChannelSelector="G"/>
+                <feGaussianBlur stdDeviation="0.5" />
+            </filter>
+            <filter id="eroded">
+                <feTurbulence type="fractalNoise" baseFrequency="0.8" numOctaves="1" result="noise" />
+                <feColorMatrix type="matrix" values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 6 -3" in="noise" result="coloredNoise" />
+                <feComposite operator="out" in="SourceGraphic" in2="coloredNoise" result="composite" />
+            </filter>
+        </defs>
+    </svg>
+
+    <!-- Concept 1: The Ink Cycle (Enso Style) -->
+    <div class="logo-container">
+        <svg viewBox="0 0 200 200">
+            <g filter="url(#rough-edge)">
+                <!-- Brush Stroke Circle -->
+                <path d="M100,20 A80,80 0 1,1 60,170" fill="none" stroke="#111" stroke-width="12" stroke-linecap="round" />
+                <path d="M100,25 A75,75 0 1,1 65,165" fill="none" stroke="#111" stroke-width="4" stroke-dasharray="10,5" />
+            </g>
+            <text x="100" y="105" class="text-main" font-size="24" letter-spacing="1">UNWRITTEN</text>
+            <text x="100" y="130" class="text-main" font-size="24" letter-spacing="1">WORLDS</text>
+        </svg>
+        <div class="logo-label">1. The Ink Cycle</div>
+    </div>
+
+    <!-- Concept 2: The Ouroboros Abstract -->
+    <div class="logo-container">
+        <svg viewBox="0 0 200 200">
+            <g filter="url(#ink-bleed)">
+                <!-- Snake Body -->
+                <path d="M100,30 C150,30 170,70 170,100 C170,150 140,170 100,170 C60,170 30,150 30,100 C30,60 60,40 80,40" 
+                      fill="none" stroke="#111" stroke-width="8" />
+                <!-- Head -->
+                <path d="M80,40 L70,30 L90,30 Z" fill="#111" />
+            </g>
+            <text x="100" y="110" class="text-main" font-size="18" letter-spacing="2">UNWRITTEN</text>
+            <line x1="60" y1="120" x2="140" y2="120" stroke="#111" stroke-width="1" />
+        </svg>
+        <div class="logo-label">2. The Serpent's Path</div>
+    </div>
+
+    <!-- Concept 3: The Ancient Portal -->
+    <div class="logo-container">
+        <svg viewBox="0 0 200 200">
+            <defs>
+                <path id="circlePath" d="M 50, 100 a 50,50 0 1,1 100,0 a 50,50 0 1,1 -100,0" />
+            </defs>
+            <g filter="url(#rough-edge)">
+                <!-- Outer Ring -->
+                <circle cx="100" cy="100" r="85" fill="none" stroke="#111" stroke-width="2" />
+                <circle cx="100" cy="100" r="80" fill="none" stroke="#111" stroke-width="6" />
+                <!-- Inner Ring -->
+                <circle cx="100" cy="100" r="60" fill="none" stroke="#111" stroke-width="1" />
+            </g>
+            <!-- Text on Path -->
+            <text font-size="14" font-family="Georgia" font-weight="bold" letter-spacing="3">
+                <textPath href="#circlePath" startOffset="50%" text-anchor="middle">
+                    UNWRITTEN WORLDS
+                </textPath>
+            </text>
+            <!-- Center Symbol -->
+            <path d="M100,70 L100,130 M70,100 L130,100" stroke="#111" stroke-width="2" filter="url(#rough-edge)" />
+        </svg>
+        <div class="logo-label">3. The Ancient Portal</div>
+    </div>
+
+    <!-- Concept 4: The Quill Eclipse -->
+    <div class="logo-container">
+        <svg viewBox="0 0 200 200">
+            <g filter="url(#eroded)">
+                <!-- Dark Circle -->
+                <circle cx="100" cy="90" r="60" fill="#111" />
+            </g>
+            <!-- Quill cutting through -->
+            <path d="M100,90 L140,160 L100,150 L60,160 Z" fill="#f4f1ea" stroke="#111" stroke-width="2" />
+            <path d="M100,90 L100,150" stroke="#111" stroke-width="1" />
+            
+            <text x="100" y="185" class="text-main" font-size="20" letter-spacing="1">UNWRITTEN</text>
+        </svg>
+        <div class="logo-label">4. The Quill Eclipse</div>
+    </div>
+
+    <!-- Concept 5: The Shattered Monogram -->
+    <div class="logo-container">
+        <svg viewBox="0 0 200 200">
+            <g filter="url(#rough-edge)">
+                <!-- Background Splatter -->
+                <path d="M50,50 Q80,20 100,50 T150,50 T150,100 T100,150 T50,100 T50,50" fill="#111" opacity="0.1" />
+                
+                <!-- Large UW -->
+                <text x="100" y="140" font-family="Times New Roman" font-size="120" font-weight="bold" fill="#111" text-anchor="middle" opacity="0.9">
+                    UW
+                </text>
+                <!-- Crack -->
+                <path d="M60,140 L100,80 L140,140" fill="none" stroke="#f4f1ea" stroke-width="3" />
+            </g>
+            <text x="100" y="170" class="text-main" font-size="14" letter-spacing="4">WORLDS</text>
+        </svg>
+        <div class="logo-label">5. The Monogram</div>
+    </div>
+
+</body>
+</html>

@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Unwritten Worlds - Enhanced Concepts</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Cormorant+Garamond:ital,wght@0,400;0,700;1,400&display=swap');
+
+        :root {
+            --bg-color: #0a0a0a;
+            --ink-color: #e6e1d3; /* Parchment/Bone white */
+            --accent-color: #8a8a8a;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--ink-color);
+            font-family: 'Cormorant Garamond', serif;
+            margin: 0;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            overflow-x: hidden;
+        }
+
+        h1 {
+            font-family: 'Cinzel', serif;
+            font-weight: 400;
+            letter-spacing: 0.2em;
+            margin-bottom: 3rem;
+            text-transform: uppercase;
+            opacity: 0.8;
+            font-size: 1.5rem;
+            border-bottom: 1px solid #333;
+            padding-bottom: 1rem;
+        }
+
+        .showcase {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 60px;
+            padding: 20px;
+            width: 100%;
+            max-width: 1200px;
+        }
+
+        .concept-card {
+            position: relative;
+            width: 400px;
+            height: 400px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            /* border: 1px solid #222; */
+            border-radius: 4px;
+            background: radial-gradient(circle at center, #151515 0%, #0a0a0a 70%);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .concept-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 40px rgba(0,0,0,0.7);
+        }
+
+        .label {
+            position: absolute;
+            bottom: 20px;
+            font-family: 'Cinzel', serif;
+            font-size: 0.8rem;
+            letter-spacing: 0.15em;
+            color: #555;
+            text-transform: uppercase;
+        }
+
+        svg {
+            width: 300px;
+            height: 300px;
+            overflow: visible;
+        }
+
+        /* --- Concept 1: The Ink Cycle --- */
+        .ink-text {
+            font-family: 'Cinzel', serif;
+            font-weight: 700;
+            fill: var(--ink-color);
+            text-anchor: middle;
+            letter-spacing: 0.1em;
+            filter: url(#rough-paper);
+        }
+        
+        .brush-circle {
+            fill: none;
+            stroke: var(--ink-color);
+            stroke-width: 15;
+            stroke-linecap: round;
+            filter: url(#brush-stroke);
+            stroke-dasharray: 600;
+            stroke-dashoffset: 600;
+            animation: drawCircle 3s ease-out forwards;
+            transform-origin: center;
+            transform: rotate(-90deg);
+        }
+
+        @keyframes drawCircle {
+            to { stroke-dashoffset: 0; }
+        }
+
+        /* --- Concept 2: The Ouroboros Loading --- */
+        .ouroboros-container {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .loading-text {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-family: 'Cinzel', serif;
+            font-size: 0.8rem;
+            letter-spacing: 0.1em;
+            opacity: 0;
+            animation: fadeIn 1s 1s forwards;
+            text-align: center;
+            width: 100%;
+            margin-top: 0;
+        }
+
+        .loading-bar-container {
+            position: absolute;
+            top: 60%;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 140px;
+            height: 2px;
+            background: #333;
+            border-radius: 2px;
+            overflow: hidden;
+            opacity: 0;
+            animation: fadeIn 1s 1.5s forwards;
+        }
+
+        .loading-bar {
+            height: 100%;
+            width: 0%;
+            background: var(--ink-color);
+            animation: loadProgress 4s 2s ease-in-out forwards;
+            box-shadow: 0 0 5px rgba(230, 225, 211, 0.5);
+        }
+
+        .dragon-ring {
+            width: 280px;
+            height: 280px;
+            animation: slowRotate 60s linear infinite;
+        }
+
+        @keyframes slowRotate {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+
+        @keyframes fadeIn {
+            to { opacity: 1; }
+        }
+
+        @keyframes loadProgress {
+            0% { width: 0%; }
+            20% { width: 15%; }
+            50% { width: 45%; }
+            70% { width: 80%; }
+            100% { width: 100%; }
+        }
+
+    </style>
+</head>
+<body>
+
+    <h1>Unwritten Worlds &mdash; Visual Identity</h1>
+
+    <!-- SVG Filters -->
+    <svg width="0" height="0" style="position: absolute;">
+        <defs>
+            <!-- Filter for rough, ink-like edges -->
+            <filter id="brush-stroke" x="-20%" y="-20%" width="140%" height="140%">
+                <feTurbulence type="fractalNoise" baseFrequency="0.03" numOctaves="4" result="noise" />
+                <feDisplacementMap in="SourceGraphic" in2="noise" scale="8" />
+                <feGaussianBlur stdDeviation="0.5" result="blurred" />
+                <feComposite operator="in" in="SourceGraphic" in2="blurred" result="composite" />
+            </filter>
+
+            <!-- Filter for paper texture/grit on text -->
+            <filter id="rough-paper">
+                <feTurbulence type="fractalNoise" baseFrequency="0.8" numOctaves="3" result="noise" />
+                <feColorMatrix type="matrix" values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 1 0" in="noise" result="coloredNoise" />
+                <feComposite operator="in" in="SourceGraphic" in2="coloredNoise" result="composite" />
+            </filter>
+            
+            <!-- Glow effect -->
+            <filter id="glow">
+                <feGaussianBlur stdDeviation="2.5" result="coloredBlur"/>
+                <feMerge>
+                    <feMergeNode in="coloredBlur"/>
+                    <feMergeNode in="SourceGraphic"/>
+                </feMerge>
+            </filter>
+        </defs>
+    </svg>
+
+    <div class="showcase">
+
+        <!-- Concept 1: The Ink Cycle (Refined) -->
+        <div class="concept-card">
+            <svg viewBox="0 0 200 200">
+                <!-- Decorative background splatters -->
+                <g opacity="0.2" fill="#e6e1d3">
+                    <circle cx="40" cy="40" r="2" filter="url(#brush-stroke)" />
+                    <circle cx="160" cy="170" r="3" filter="url(#brush-stroke)" />
+                    <path d="M150,50 Q160,40 170,50" stroke="#e6e1d3" stroke-width="1" fill="none" filter="url(#brush-stroke)" />
+                </g>
+
+                <!-- Main Circle -->
+                <path class="brush-circle" d="M100,25 A75,75 0 1,1 99.9,25 Z" />
+                
+                <!-- Text -->
+                <text x="100" y="95" class="ink-text" font-size="22">UNWRITTEN</text>
+                <text x="100" y="125" class="ink-text" font-size="22">WORLDS</text>
+            </svg>
+            <div class="label">Logo Concept</div>
+        </div>
+
+        <!-- Concept 2: The Ouroboros Loading (Refined) -->
+        <div class="concept-card">
+            <div class="ouroboros-container">
+                <svg viewBox="0 0 200 200" class="dragon-ring">
+                    <defs>
+                        <filter id="rough-dragon">
+                            <feTurbulence type="fractalNoise" baseFrequency="0.04" numOctaves="3" result="noise" />
+                            <feDisplacementMap in="SourceGraphic" in2="noise" scale="3" />
+                        </filter>
+                    </defs>
+                    
+                    <g filter="url(#rough-dragon)" transform="rotate(-45, 100, 100)">
+                        <!-- Body: A large arc -->
+                        <path id="snakeBody" d="M 100, 30 A 70,70 0 1, 1 70, 40" 
+                              fill="none" stroke="#e6e1d3" stroke-width="14" stroke-linecap="round" stroke-dasharray="2,3" />
+                        
+                        <!-- Spikes/Scales on the back (outer edge) -->
+                        <path d="M 100, 22 A 78,78 0 1, 1 62, 34" 
+                              fill="none" stroke="#e6e1d3" stroke-width="2" stroke-dasharray="1, 8" stroke-linecap="butt" />
+
+                        <!-- Head -->
+                        <g transform="translate(70, 40) rotate(-10)">
+                             <!-- Jaw -->
+                             <path d="M0,0 L15,-5 L20,5 L5,10 Z" fill="#e6e1d3" />
+                             <!-- Eye -->
+                             <circle cx="10" cy="0" r="1.5" fill="#0a0a0a" />
+                        </g>
+                        
+                        <!-- Tail Tip (being eaten) -->
+                        <path d="M 100, 30 L 90, 35 L 80, 40" fill="none" stroke="#e6e1d3" stroke-width="4" />
+                    </g>
+                </svg>
+                
+                <div class="loading-text">Entering the cycle...</div>
+                <div class="loading-bar-container">
+                    <div class="loading-bar"></div>
+                </div>
+            </div>
+            <div class="label">Loading Screen</div>
+        </div>
+
+    </div>
+
+</body>
+</html>
