@@ -8,7 +8,9 @@ from dotenv import load_dotenv
 from generate_assets import create_void_parchment, create_ink_enso, create_sigil, create_giraffe, create_kangaroo
 
 # Load environment variables from .env
-load_dotenv()
+from pathlib import Path
+env_path = Path(__file__).parent / '.env'
+load_dotenv(dotenv_path=env_path)
 
 # Import the Director (Wrap in try/except in case dependencies/keys are missing)
 try:
@@ -81,7 +83,7 @@ def get_enso():
 @app.get("/generate/directed/enso")
 def get_directed_enso(
     prompt: str = Query(..., description="Describe the vibe (e.g. 'Burning Rage')"),
-    model: str = Query("gpt-4o-2024-08-06", description="The LLM model to use"),
+    model: str = Query("gpt-4o", description="The LLM model to use"),
     api_key_header: str | None = Header(default=None, alias="X-API-Key"),
     base_url_header: str | None = Header(default=None, alias="X-Base-Url"),
 ):
@@ -90,13 +92,13 @@ def get_directed_enso(
     Prefers API Key and Base URL from headers; falls back to .env. Defaults base to Requesty router.
     """
     if not HAS_LLM:
-        return {"error": "LLM Director not available."}
+        raise HTTPException(status_code=503, detail="LLM Director not available.")
 
     api_key = api_key_header or os.environ.get("OPENAI_API_KEY")
     base_url = base_url_header or os.environ.get("LLM_BASE_URL", "https://router.requesty.ai/v1")
 
     if not api_key or "placeholder" in str(api_key):
-        return {"error": "No API Key provided. Pass X-API-Key header or configure .env"}
+        raise HTTPException(status_code=401, detail="No API Key provided. Pass X-API-Key header or configure .env")
 
     try:
         params = get_enso_params_from_prompt(prompt, api_key=api_key, model=model, base_url=base_url)
@@ -114,7 +116,7 @@ def get_directed_enso(
 
     except Exception as e:
         print(f"❌ Generation Error: {e}")
-        return {"error": str(e)}
+        raise HTTPException(status_code=500, detail=str(e))
 
 @app.get("/generate/sigil")
 def get_sigil():
@@ -137,4 +139,8 @@ def get_kangaroo():
 if __name__ == "__main__":
     import uvicorn
     print("🍌 NanoBanana API starting up...")
+    print(f"   - LLM_BASE_URL: {os.environ.get('LLM_BASE_URL', 'Not Set (will use default)')}")
+    key = os.environ.get('OPENAI_API_KEY', '')
+    masked_key = f"{key[:8]}...{key[-4:]}" if key else "Not Set"
+    print(f"   - OPENAI_API_KEY: {masked_key}")
     uvicorn.run(app, host="0.0.0.0", port=8001)

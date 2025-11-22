@@ -53,27 +53,64 @@ def get_enso_params_from_prompt(prompt: str, api_key: str, model: str = "gpt-4o-
     url = base if base.endswith("/chat/completions") else f"{base}/chat/completions"
     
     payload = {
-        "model": model, 
+        "model": model,
         "messages": [
-             {"role": "system", "content": "You are the Art Director for 'Unwritten Worlds'. Translate user moods into JSON parameters for the Ink Enso generator."},
-             {"role": "user", "content": f"Generate parameters for this mood: {prompt}"}
-        ],
-        "response_format": {
-            "type": "json_schema",
-            "json_schema": json_schema
-        }
-    }
+            {
+                "role": "system",
+                "content": (
+                    "You are the Art Director for 'Unwritten Worlds'. "
+                    "Translate user moods into JSON parameters for the Ink Enso generator. "
+                    "Output ONLY a valid JSON object with keys: color_hex (e.g. #FF0000), complexity (20-100), chaos (0.1-2.0), text_overlay (string)."
+                ),
+            },
+            {
+                "role": "user",
+        if isinstance(content, list):
+            text = ''.join([p.get('text', '') if isinstance(p, dict) else str(p) for p in content])
+        else:
+            text = content
 
-    try:
-        response = requests.post(url, headers=headers, json=payload, timeout=10)
-        response.raise_for_status()
-        
-        data = response.json()
-        content = data['choices'][0]['message']['content']
-        
-        params_dict = json.loads(content)
-        return EnsoParams(**params_dict)
+        if not isinstance(text, str) or not text.strip():
+            raise ValueError(f"Empty or non-text response: {str(content)[:200]}")
+
+        try:
+            params_dict = json.loads(text)
+        except Exception:
+            # Try to extract JSON object from surrounding text
+            start = text.find('{')
+            end = text.rfind('}')
+            if start != -1 and end != -1 and end > start:
+                params_dict = json.loads(text[start:end+1])
+            else:
+                raise ValueError(f"Non-JSON response: {text[:200]}")
+
+        # Sanitize and clamp values
+        color_hex = str(params_dict.get('color_hex', '#000000')).strip()
+        if not color_hex.startswith('#'):
+            color_hex = f"#{color_hex.lstrip('#')}"
+        hex_part = color_hex.lstrip('#')
+        if len(hex_part) == 3:
+            hex_part = ''.join([c*2 for c in hex_part])
+        if len(hex_part) != 6:
+            hex_part = '000000'
+        color_hex = f"#{hex_part}"
+
+        try:
+            complexity = int(params_dict.get('complexity', 40))
+        except Exception:
+            complexity = 40
+        complexity = max(20, min(100, complexity))
+
+        try:
+            chaos = float(params_dict.get('chaos', 1.0))
+        except Exception:
+            chaos = 1.0
+        chaos = max(0.1, min(2.0, chaos))
+
+        text_overlay = str(params_dict.get('text_overlay', 'ENTERING VOID'))
+
+        return EnsoParams(color_hex=color_hex, complexity=complexity, chaos=chaos, text_overlay=text_overlay)
         
     except Exception as e:
         print(f"❌ Director Error: {e}")
-        return EnsoParams(color_hex="#000000", complexity=30, chaos=0.5, text_overlay="ERROR")
+        raise

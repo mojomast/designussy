@@ -730,8 +730,14 @@
                 const response = await fetch(url, { headers: { 'X-API-Key': apiKey, 'X-Base-Url': baseUrl || 'https://router.requesty.ai/v1' } });
                 
                 if (!response.ok) {
-                    const err = await response.json();
-                    throw new Error(err.error || "Failed to generate");
+                    let msg = `HTTP ${response.status}`;
+                    try {
+                        const err = await response.json();
+                        msg = err.detail || err.error || JSON.stringify(err);
+                    } catch (_) {
+                        try { msg = await response.text(); } catch {}
+                    }
+                    throw new Error(msg);
                 }
 
                 const blob = await response.blob();

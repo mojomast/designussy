@@ -1,0 +1,511 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Unwritten Worlds - Composite Editor</title>
+    <link rel="stylesheet" href="assets/css/unwritten_worlds.css">
+    <script src="https://daybrush.com/moveable/release/latest/dist/moveable.min.js"></script>
+    <style>
+        body {
+            display: flex;
+            height: 100vh;
+            overflow: hidden;
+            background: #111;
+            margin: 0;
+        }
+
+        /* Sidebar */
+        #sidebar {
+            width: 320px;
+            background: #0a0a0a;
+            border-right: 1px solid #333;
+            display: flex;
+            flex-direction: column;
+            padding: 20px;
+            gap: 20px;
+            overflow-y: auto;
+            z-index: 100;
+            flex-shrink: 0;
+        }
+
+        .asset-category {
+            margin-bottom: 20px;
+        }
+
+        .asset-category h3 {
+            font-family: 'Cinzel', serif;
+            color: #888;
+            font-size: 0.9rem;
+            margin-bottom: 10px;
+            border-bottom: 1px solid #333;
+            padding-bottom: 5px;
+        }
+
+        .asset-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+        }
+
+        .asset-item {
+            background: #1a1a1a;
+            border: 1px solid #333;
+            border-radius: 4px;
+            cursor: pointer;
+            padding: 5px;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 80px;
+        }
+
+        .asset-item:hover {
+            border-color: var(--accent-color);
+            background: #222;
+        }
+
+        .asset-item img {
+            width: 100%;
+            height: 80px;
+            object-fit: contain;
+            background: #d4c5b0;
+            /* Parchment bg for preview */
+        }
+
+        .asset-item .preview-html {
+            transform: scale(0.5);
+            pointer-events: none;
+        }
+
+        /* Canvas Area */
+        #canvas-container {
+            flex: 1;
+            position: relative;
+            background: #050505;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+        }
+
+        #canvas {
+            width: 1280px;
+            height: 800px;
+            background: #000;
+            position: relative;
+            box-shadow: 0 0 50px rgba(0, 0, 0, 0.8);
+            overflow: hidden;
+        }
+
+        /* Draggable Elements */
+        .canvas-element {
+            position: absolute;
+            cursor: grab;
+            user-select: none;
+            /* Important: Wrapper handles position, Inner handles animation */
+            display: inline-block;
+        }
+
+        .canvas-element:active {
+            cursor: grabbing;
+        }
+
+        .canvas-element.selected {
+            outline: 1px solid var(--accent-color);
+        }
+
+        /* Inner content wrapper to isolate animations */
+        .element-content {
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            /* Let clicks pass to wrapper */
+        }
+
+        .element-content img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+        }
+
+        /* Properties Panel */
+        #properties {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            width: 250px;
+            background: rgba(10, 10, 10, 0.9);
+            border: 1px solid #333;
+            padding: 15px;
+            border-radius: 8px;
+            display: none;
+            z-index: 200;
+        }
+
+        #properties.active {
+            display: block;
+        }
+
+        .prop-row {
+            margin-bottom: 10px;
+        }
+
+        .prop-row label {
+            display: block;
+            color: #888;
+            font-size: 12px;
+            margin-bottom: 5px;
+            font-family: monospace;
+        }
+
+        .prop-row input,
+        .prop-row select {
+            width: 100%;
+            background: #222;
+            border: 1px solid #444;
+            color: #fff;
+            padding: 5px;
+        }
+
+        .nav-btn {
+            background: #222;
+            color: #e0e0e0;
+            border: 1px solid #444;
+            padding: 8px 16px;
+            cursor: pointer;
+            font-family: 'Cinzel', serif;
+            transition: all 0.3s ease;
+        }
+
+        .nav-btn:hover {
+            background: #333;
+            border-color: #666;
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- Sidebar -->
+    <div id="sidebar">
+        <h2 class="font-cinzel text-accent">Asset Library</h2>
+
+        <div class="asset-category">
+            <h3>Backgrounds</h3>
+            <div class="asset-grid">
+                <div class="asset-item" onclick="setBackground('assets/elements/backgrounds/void_parchment_1.png')">
+                    <img src="assets/elements/backgrounds/void_parchment_1.png">
+                </div>
+                <div class="asset-item" onclick="setBackground('assets/elements/backgrounds/void_parchment_2.png')">
+                    <img src="assets/elements/backgrounds/void_parchment_2.png">
+                </div>
+                <!-- Standard Parchment BG -->
+                <div class="asset-item" onclick="setHTMLBackground('<div class=\'parchment-bg\'></div>')">
+                    <div style="color:#fff; font-size:0.8rem;">CSS Parchment</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="asset-category">
+            <h3>Glyphs</h3>
+            <div class="asset-grid">
+                <div class="asset-item" onclick="addImage('assets/elements/glyphs/ink_enso_1.png')"><img
+                        src="assets/elements/glyphs/ink_enso_1.png"></div>
+                <div class="asset-item" onclick="addImage('assets/elements/glyphs/ink_enso_2.png')"><img
+                        src="assets/elements/glyphs/ink_enso_2.png"></div>
+                <div class="asset-item" onclick="addImage('assets/elements/glyphs/ink_enso_3.png')"><img
+                        src="assets/elements/glyphs/ink_enso_3.png"></div>
+                <div class="asset-item" onclick="addImage('assets/elements/glyphs/sigil_1.png')"><img
+                        src="assets/elements/glyphs/sigil_1.png"></div>
+                <div class="asset-item" onclick="addImage('assets/elements/glyphs/sigil_2.png')"><img
+                        src="assets/elements/glyphs/sigil_2.png"></div>
+                <div class="asset-item" onclick="addImage('assets/elements/glyphs/sigil_3.png')"><img
+                        src="assets/elements/glyphs/sigil_3.png"></div>
+            </div>
+        </div>
+
+        <div class="asset-category">
+            <h3>Creatures</h3>
+            <div class="asset-grid">
+                <div class="asset-item" onclick="addImage('assets/elements/creatures/kangaroo_1.png')"><img
+                        src="assets/elements/creatures/kangaroo_1.png"></div>
+                <div class="asset-item" onclick="addImage('assets/elements/creatures/kangaroo_2.png')"><img
+                        src="assets/elements/creatures/kangaroo_2.png"></div>
+                <div class="asset-item" onclick="addImage('assets/elements/creatures/kangaroo_3.png')"><img
+                        src="assets/elements/creatures/kangaroo_3.png"></div>
+                <div class="asset-item" onclick="addImage('assets/elements/creatures/giraffe_1.png')"><img
+                        src="assets/elements/creatures/giraffe_1.png"></div>
+                <div class="asset-item" onclick="addImage('assets/elements/creatures/giraffe_2.png')"><img
+                        src="assets/elements/creatures/giraffe_2.png"></div>
+                <div class="asset-item" onclick="addImage('assets/elements/creatures/giraffe_3.png')"><img
+                        src="assets/elements/creatures/giraffe_3.png"></div>
+            </div>
+        </div>
+
+        <div class="asset-category">
+            <h3>UI Elements</h3>
+            <div class="asset-grid">
+                <div class="asset-item" onclick="addImage('assets/elements/ui/ink_divider_1.png')"><img
+                        src="assets/elements/ui/ink_divider_1.png"></div>
+                <div class="asset-item" onclick="addImage('assets/elements/ui/ink_divider_2.png')"><img
+                        src="assets/elements/ui/ink_divider_2.png"></div>
+                <div class="asset-item" onclick="addImage('assets/elements/ui/ink_divider_3.png')"><img
+                        src="assets/elements/ui/ink_divider_3.png"></div>
+                <div class="asset-item" onclick="addImage('assets/elements/ui/void_orb_1.png')"><img
+                        src="assets/elements/ui/void_orb_1.png"></div>
+                <div class="asset-item" onclick="addImage('assets/elements/ui/void_orb_2.png')"><img
+                        src="assets/elements/ui/void_orb_2.png"></div>
+                <div class="asset-item" onclick="addImage('assets/elements/ui/void_orb_3.png')"><img <button
+                        class="nav-btn" style="width:100%; margin-bottom:10px;"
+                        onclick="addText('THE UNWRITTEN', '3rem')">Add Title</button>
+                    <button class="nav-btn" style="width:100%;" onclick="addText('Subtitle text...', '1.2rem')">Add
+                        Subtitle</button>
+                </div>
+
+                <button class="nav-btn" style="width:100%; margin-top:20px; border-color: #666;"
+                    onclick="clearCanvas()">Clear
+                    Canvas</button>
+            </div>
+
+            <!-- Canvas -->
+            <div id="canvas-container">
+                <div id="canvas">
+                    <div class="texture-overlay"></div>
+                    <!-- Elements will be injected here -->
+                </div>
+            </div>
+
+            <!-- Properties Panel -->
+            <div id="properties">
+                <h3 class="font-cinzel text-accent" style="margin-bottom:15px;">Properties</h3>
+
+                <div class="prop-row">
+                    <label>Opacity</label>
+                    <input type="range" min="0" max="1" step="0.1" id="prop-opacity"
+                        oninput="updateProp('opacity', this.value)">
+                </div>
+
+                <div class="prop-row">
+                    <label>Blend Mode</label>
+                    <select id="prop-blend" onchange="updateProp('mixBlendMode', this.value)">
+                        <option value="normal">Normal</option>
+                        <option value="multiply">Multiply</option>
+                        <option value="screen">Screen</option>
+                        <option value="overlay">Overlay</option>
+                        <option value="difference">Difference</option>
+                        <option value="plus-lighter">Plus Lighter</option>
+                    </select>
+                </div>
+
+                <div class="prop-row">
+                    <label>Filter</label>
+                    <select id="prop-filter" onchange="updateProp('filter', this.value)">
+                        <option value="none">None</option>
+                        <option value="invert(1)">Invert</option>
+                        <option value="grayscale(1)">Grayscale</option>
+                        <option value="sepia(1)">Sepia</option>
+                        <option value="blur(2px)">Blur</option>
+                        <option value="drop-shadow(0 0 5px #fff)">Glow (White)</option>
+                        <option value="drop-shadow(0 0 5px #000)">Shadow (Black)</option>
+                    </select>
+                </div>
+
+                <!-- Animation is now applied to the INNER content, not the wrapper -->
+                <div class="prop-row">
+                    <label>Animation (Inner)</label>
+                    <select id="prop-anim" onchange="updateInnerProp('animation', this.value)">
+                        <option value="none">None</option>
+                        <option value="slowSpin 60s linear infinite">Slow Spin</option>
+                        <option value="pulseText 4s ease-in-out infinite">Pulse</option>
+                        <option value="runePulse 4s infinite">Rune Pulse</option>
+                        <option value="flicker 2s infinite">Flicker</option>
+                    </select>
+                </div>
+
+                <button class="nav-btn" style="width:100%; margin-top:10px; border-color:red; color:red;"
+                    onclick="deleteSelected()">Delete Element</button>
+            </div>
+
+            <script src="assets/js/unwritten_worlds_core.js"></script>
+            <script>
+                const canvas = document.getElementById('canvas');
+                let selectedEl = null;
+                let moveable = new Moveable(document.getElementById('canvas-container'), {
+                    target: null,
+                    draggable: true,
+                    resizable: true,
+                    rotatable: true,
+                    snappable: true,
+                    keepRatio: true,
+                });
+
+                // Moveable Events
+                moveable.on("drag", ({ target, transform }) => {
+                    target.style.transform = transform;
+                }).on("resize", ({ target, width, height, delta }) => {
+                    delta[0] && (target.style.width = `${width}px`);
+                    delta[1] && (target.style.height = `${height}px`);
+                }).on("rotate", ({ target, transform }) => {
+                    target.style.transform = transform;
+                });
+
+                // Selection Logic
+                canvas.addEventListener('mousedown', (e) => {
+                    // Clicked on canvas background
+                    if (e.target === canvas || e.target.classList.contains('texture-overlay') || e.target.classList.contains('parchment-bg')) {
+                        deselect();
+                        return;
+                    }
+
+                    // Find the draggable wrapper
+                    let target = e.target;
+                    while (target && target !== canvas && !target.classList.contains('canvas-element')) {
+                        target = target.parentElement;
+                    }
+
+                    if (target && target.classList.contains('canvas-element')) {
+                        select(target);
+                        e.stopPropagation(); // Prevent deselecting immediately
+                    }
+                });
+
+                function select(el) {
+                    if (selectedEl) selectedEl.classList.remove('selected');
+                    selectedEl = el;
+                    selectedEl.classList.add('selected');
+                    moveable.target = el;
+                    document.getElementById('properties').classList.add('active');
+
+                    // Populate props
+                    document.getElementById('prop-opacity').value = el.style.opacity || 1;
+                    document.getElementById('prop-blend').value = el.style.mixBlendMode || 'normal';
+                    document.getElementById('prop-filter').value = el.style.filter || 'none';
+
+                    // Get inner animation if exists
+                    const inner = el.querySelector('.element-content');
+                    if (inner) {
+                        document.getElementById('prop-anim').value = inner.style.animation || 'none';
+                    }
+                }
+
+                function deselect() {
+                    if (selectedEl) selectedEl.classList.remove('selected');
+                    selectedEl = null;
+                    moveable.target = null;
+                    document.getElementById('properties').classList.remove('active');
+                }
+
+                function setBackground(url) {
+                    // Remove any existing HTML bg
+                    const existingBg = canvas.querySelector('.parchment-bg');
+                    if (existingBg) existingBg.remove();
+
+                    canvas.style.backgroundImage = `url('${url}')`;
+                    canvas.style.backgroundSize = 'cover';
+                }
+
+                function setHTMLBackground(html) {
+                    canvas.style.backgroundImage = 'none';
+                    // Check if exists
+                    let bg = canvas.querySelector('.parchment-bg');
+                    if (bg) bg.remove();
+
+                    // Insert as first child (behind everything but overlay)
+                    // Actually overlay should be on top.
+                    // Let's just append and set z-index 0
+                    const temp = document.createElement('div');
+                    temp.innerHTML = html;
+                    const el = temp.firstElementChild;
+                    el.style.position = 'absolute';
+                    el.style.inset = '0';
+                    el.style.zIndex = '0';
+                    canvas.insertBefore(el, canvas.firstChild);
+                }
+
+                function createWrapper(width, height) {
+                    const el = document.createElement('div');
+                    el.classList.add('canvas-element');
+                    el.style.left = '50%';
+                    el.style.top = '50%';
+                    // Center initial position
+                    el.style.transform = 'translate(-50%, -50%)';
+                    el.style.width = width ? `${width}px` : 'auto';
+                    el.style.height = height ? `${height}px` : 'auto';
+                    return el;
+                }
+
+                function addImage(src) {
+                    const el = createWrapper(200, 200); // Default size
+
+                    const inner = document.createElement('div');
+                    inner.classList.add('element-content');
+
+                    const img = document.createElement('img');
+                    img.src = src;
+
+                    inner.appendChild(img);
+                    el.appendChild(inner);
+                    canvas.appendChild(el);
+                    select(el);
+                }
+
+                function addHTML(html, w, h) {
+                    const el = createWrapper(w, h);
+                    const inner = document.createElement('div');
+                    inner.classList.add('element-content');
+                    inner.innerHTML = html;
+
+                    el.appendChild(inner);
+                    canvas.appendChild(el);
+                    select(el);
+                }
+
+                function addText(text, fontSize = '3rem') {
+                    const el = createWrapper();
+                    const inner = document.createElement('div');
+                    inner.classList.add('element-content');
+                    inner.textContent = text;
+                    inner.style.fontFamily = 'Cinzel';
+                    inner.style.fontSize = fontSize;
+                    inner.style.color = '#e0e0e0';
+                    inner.style.textShadow = '0 0 10px #000';
+                    inner.contentEditable = true;
+                    inner.style.pointerEvents = 'auto'; // Allow text selection/editing
+
+                    el.appendChild(inner);
+                    canvas.appendChild(el);
+                    select(el);
+                }
+
+                function updateProp(prop, value) {
+                    if (!selectedEl) return;
+                    selectedEl.style[prop] = value;
+                }
+
+                function updateInnerProp(prop, value) {
+                    if (!selectedEl) return;
+                    const inner = selectedEl.querySelector('.element-content');
+                    if (inner) inner.style[prop] = value;
+                }
+
+                function deleteSelected() {
+                    if (!selectedEl) return;
+                    selectedEl.remove();
+                    deselect();
+                }
+
+                function clearCanvas() {
+                    // Keep texture overlay
+                    const overlay = canvas.querySelector('.texture-overlay');
+                    canvas.innerHTML = '';
+                    if (overlay) canvas.appendChild(overlay);
+                    deselect();
+                }
+
+            </script>
+</body>
+
+</html>
