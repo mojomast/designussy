@@ -1,0 +1,73 @@
+[2025-11-24 14:39:24] INFO: ============================================================
+[2025-11-24 14:39:24] INFO: Starting Asset Directory Migration
+[2025-11-24 14:39:24] INFO: ============================================================
+[2025-11-24 14:39:24] INFO: 
+Creating new directory structure...
+[2025-11-24 14:39:24] INFO: Created directory: assets/generated/ui
+[2025-11-24 14:39:24] INFO: 
+Moving files to new structure...
+[2025-11-24 14:39:24] INFO: Moved: assets/effects/ink_splatter.png -> assets/static/effects/ink_splatter.png
+[2025-11-24 14:39:24] INFO: Moved: assets/effects/parchment.png -> assets/static/effects/parchment.png
+[2025-11-24 14:39:24] INFO: Moved: assets/effects/ouroboros.png -> assets/static/effects/ouroboros.png
+[2025-11-24 14:39:24] INFO: Moved: assets/effects/runes.png -> assets/static/effects/runes.png
+[2025-11-24 14:39:24] INFO: Moved: assets/elements/backgrounds/void_parchment_1.png -> assets/static/elements/backgrounds/void_parchment_1.png
+[2025-11-24 14:39:24] INFO: Moved: assets/elements/backgrounds/void_parchment_2.png -> assets/static/elements/backgrounds/void_parchment_2.png
+[2025-11-24 14:39:24] INFO: Moved: assets/elements/backgrounds/void_parchment_3.png -> assets/static/elements/backgrounds/void_parchment_3.png
+[2025-11-24 14:39:24] INFO: Moved: assets/elements/creatures/giraffe_1.png -> assets/static/elements/creatures/giraffe_1.png
+[2025-11-24 14:39:24] INFO: Moved: assets/elements/creatures/giraffe_2.png -> assets/static/elements/creatures/giraffe_2.png
+[2025-11-24 14:39:24] INFO: Moved: assets/elements/creatures/giraffe_3.png -> assets/static/elements/creatures/giraffe_3.png
+[2025-11-24 14:39:24] INFO: Moved: assets/elements/creatures/kangaroo_1.png -> assets/static/elements/creatures/kangaroo_1.png
+[2025-11-24 14:39:24] INFO: Moved: assets/elements/creatures/kangaroo_2.png -> assets/static/elements/creatures/kangaroo_2.png
+[2025-11-24 14:39:24] INFO: Moved: assets/elements/creatures/kangaroo_3.png -> assets/static/elements/creatures/kangaroo_3.png
+[2025-11-24 14:39:24] INFO: Moved: assets/elements/glyphs/ink_enso_1.png -> assets/static/elements/glyphs/ink_enso_1.png
+[2025-11-24 14:39:24] INFO: Moved: assets/elements/glyphs/ink_enso_2.png -> assets/static/elements/glyphs/ink_enso_2.png
+[2025-11-24 14:39:24] INFO: Moved: assets/elements/glyphs/ink_enso_3.png -> assets/static/elements/glyphs/ink_enso_3.png
+[2025-11-24 14:39:24] INFO: Moved: assets/elements/glyphs/sigil_1.png -> assets/static/elements/glyphs/sigil_1.png
+[2025-11-24 14:39:24] INFO: Moved: assets/elements/glyphs/sigil_2.png -> assets/static/elements/glyphs/sigil_2.png
+[2025-11-24 14:39:24] INFO: Moved: assets/elements/glyphs/sigil_3.png -> assets/static/elements/glyphs/sigil_3.png
+[2025-11-24 14:39:24] INFO: Moved: assets/elements/ui/ink_divider_1.png -> assets/static/elements/ui/ink_divider_1.png
+[2025-11-24 14:39:24] INFO: Moved: assets/elements/ui/ink_divider_2.png -> assets/static/elements/ui/ink_divider_2.png
+[2025-11-24 14:39:24] INFO: Moved: assets/elements/ui/ink_divider_3.png -> assets/static/elements/ui/ink_divider_3.png
+[2025-11-24 14:39:24] INFO: Moved: assets/elements/ui/void_orb_1.png -> assets/static/elements/ui/void_orb_1.png
+[2025-11-24 14:39:24] INFO: Moved: assets/elements/ui/void_orb_2.png -> assets/static/elements/ui/void_orb_2.png
+[2025-11-24 14:39:24] INFO: Moved: assets/elements/ui/void_orb_3.png -> assets/static/elements/ui/void_orb_3.png
+[2025-11-24 14:39:24] INFO: Moved: assets/generated/void_parchment_1.png -> assets/generated/backgrounds/void_parchment_1.png
+[2025-11-24 14:39:24] INFO: Moved: assets/generated/void_parchment_2.png -> assets/generated/backgrounds/void_parchment_2.png
+[2025-11-24 14:39:24] INFO: Moved: assets/generated/void_parchment_3.png -> assets/generated/backgrounds/void_parchment_3.png
+[2025-11-24 14:39:24] INFO: Moved: assets/generated/void_parchment_4.png -> assets/generated/backgrounds/void_parchment_4.png
+[2025-11-24 14:39:24] INFO: Moved: assets/generated/void_parchment_5.png -> assets/generated/backgrounds/void_parchment_5.png
+[2025-11-24 14:39:24] INFO: Moved: assets/generated/ink_enso_1.png -> assets/generated/glyphs/ink_enso_1.png
+[2025-11-24 14:39:24] INFO: Moved: assets/generated/ink_enso_2.png -> assets/generated/glyphs/ink_enso_2.png
+[2025-11-24 14:39:24] INFO: Moved: assets/generated/ink_enso_3.png -> assets/generated/glyphs/ink_enso_3.png
+[2025-11-24 14:39:24] INFO: Moved: assets/generated/ink_enso_4.png -> assets/generated/glyphs/ink_enso_4.png
+[2025-11-24 14:39:24] INFO: Moved: assets/generated/ink_enso_5.png -> assets/generated/glyphs/ink_enso_5.png
+[2025-11-24 14:39:24] INFO: Moved: assets/generated/sigil_1.png -> assets/generated/glyphs/sigil_1.png
+[2025-11-24 14:39:24] INFO: Moved: assets/generated/sigil_2.png -> assets/generated/glyphs/sigil_2.png
+[2025-11-24 14:39:24] INFO: Moved: assets/generated/sigil_3.png -> assets/generated/glyphs/sigil_3.png
+[2025-11-24 14:39:24] INFO: Moved: assets/generated/sigil_4.png -> assets/generated/glyphs/sigil_4.png
+[2025-11-24 14:39:24] INFO: Moved: assets/generated/sigil_5.png -> assets/generated/glyphs/sigil_5.png
+[2025-11-24 14:39:24] INFO: Moved: assets/generated/giraffe_1.png -> assets/generated/creatures/giraffe_1.png
+[2025-11-24 14:39:24] INFO: Moved: assets/generated/giraffe_2.png -> assets/generated/creatures/giraffe_2.png
+[2025-11-24 14:39:24] INFO: Moved: assets/generated/giraffe_3.png -> assets/generated/creatures/giraffe_3.png
+[2025-11-24 14:39:24] INFO: Moved: assets/generated/giraffe_4.png -> assets/generated/creatures/giraffe_4.png
+[2025-11-24 14:39:24] INFO: Moved: assets/generated/giraffe_5.png -> assets/generated/creatures/giraffe_5.png
+[2025-11-24 14:39:24] INFO: Moved: assets/generated/kangaroo_1.png -> assets/generated/creatures/kangaroo_1.png
+[2025-11-24 14:39:24] INFO: Moved: assets/generated/kangaroo_2.png -> assets/generated/creatures/kangaroo_2.png
+[2025-11-24 14:39:24] INFO: Moved: assets/generated/kangaroo_3.png -> assets/generated/creatures/kangaroo_3.png
+[2025-11-24 14:39:24] INFO: Moved: assets/generated/kangaroo_4.png -> assets/generated/creatures/kangaroo_4.png
+[2025-11-24 14:39:24] INFO: Moved: assets/generated/kangaroo_5.png -> assets/generated/creatures/kangaroo_5.png
+[2025-11-24 14:39:24] INFO: 
+Updating path references...
+[2025-11-24 14:39:24] INFO: Updated paths in: assets/css/unwritten_worlds_common.css
+[2025-11-24 14:39:24] INFO: Updated paths in: assets/css/unwritten_worlds.css
+[2025-11-24 14:39:24] INFO: Updated paths in: unwritten_worlds_editor.html
+[2025-11-24 14:39:24] INFO: Updated paths in: unwritten_worlds_effects_library.html
+[2025-11-24 14:39:24] INFO: Updated paths in: unwritten_worlds_loading_examples.html
+[2025-11-24 14:39:24] INFO: 
+============================================================
+[2025-11-24 14:39:24] INFO: Migration Summary
+[2025-11-24 14:39:24] INFO: ============================================================
+[2025-11-24 14:39:24] INFO: Files moved: 50
+[2025-11-24 14:39:24] INFO: Files updated: 5
+[2025-11-24 14:39:24] INFO: 
+Migration complete!

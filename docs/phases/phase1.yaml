@@ -1,0 +1,85 @@
+name: "P1: Critical Security & Stability"
+goals:
+  - "Fix critical CORS security vulnerability"
+  - "Restore code integrity in llm_director.py"
+  - "Implement proper error handling and validation"
+  - "Add input sanitization for API endpoints"
+  - "Establish secure secrets management"
+  - "Create basic health check endpoint"
+status: "completed"
+tasks:
+  - id: "P1-T1"
+    desc: "Fix CORS vulnerability - replace wildcard origins with configurable whitelist"
+    status: "completed"
+    accept:
+      - "CORS origins configurable via environment variable"
+      - "Default to development-friendly settings"
+      - "Production-ready security posture"
+    notes: "Current: allow_origins=['*'] is a security risk"
+  
+  - id: "P1-T2"
+    desc: "Fix code corruption in llm_director.py (lines 68-85)"
+    status: "completed"
+    accept:
+      - "Restore missing message content structure"
+      - "Complete the get_enso_params_from_prompt function"
+      - "Validate JSON parsing logic works correctly"
+    notes: "Critical corruption in message construction and response parsing"
+  
+  - id: "P1-T3"
+    desc: "Add comprehensive error handling to all API endpoints"
+    status: "completed"
+    accept:
+      - "Try-catch blocks around all generation functions"
+      - "Meaningful error messages returned to client"
+      - "Server logs contain debugging information"
+      - "No unhandled exceptions"
+    notes: "Missing error handling can crash server"
+  
+  - id: "P1-T4"
+    desc: "Implement input validation and sanitization"
+    status: "completed"
+    accept:
+      - "Query parameter validation (prompt length, model names)"
+      - "Header validation (API key format)"
+      - "Path parameter validation (asset types)"
+      - "Rate limiting considerations documented"
+    notes: "Prevent injection attacks and malformed requests"
+  
+  - id: "P1-T5"
+    desc: "Enhance secrets management security"
+    status: "completed"
+    accept:
+      - ".env.example template file created"
+      - "Documentation on environment variable usage"
+      - "No hardcoded credentials in source code"
+      - "API keys never logged or exposed in responses"
+    notes: "Ensure secure handling of API keys"
+  
+  - id: "P1-T6"
+    desc: "Create health check endpoint"
+    status: "completed"
+    accept:
+      - "GET /health endpoint returns service status"
+      - "Includes version info and uptime"
+      - "Lightweight dependency checks"
+    notes: "Essential for monitoring and deployment"
+  
+  - id: "P1-T7"
+    desc: "Add request logging and monitoring"
+    status: "completed"
+    accept:
+      - "Structured logging for all API requests"
+      - "Error logging with stack traces"
+      - "Performance metrics (response time, success rate)"
+    notes: "Required for production debugging"
+
+exit_criteria:
+  - "All security vulnerabilities addressed"
+  - "Code integrity restored"
+  - "Comprehensive error handling in place"
+  - "Health check endpoint functional"
+  - "Zero unhandled exceptions in test suite"
+  - "Security audit passes"
+
+notes: "Critical fixes must be completed before proceeding to Phase 2. This phase establishes the security and stability foundation."

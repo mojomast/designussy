@@ -5,9 +5,12 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Unwritten Worlds - Composite Editor</title>
-    <link rel="stylesheet" href="assets/css/unwritten_worlds.css">
+    <!-- Shared Component Library -->
+    <link rel="stylesheet" href="assets/css/unwritten_worlds_common.css">
     <script src="https://daybrush.com/moveable/release/latest/dist/moveable.min.js"></script>
+    
     <style>
+        /* Editor-specific styles */
         body {
             display: flex;
             height: 100vh;
@@ -35,7 +38,6 @@
         }
 
         .asset-category h3 {
-            font-family: 'Cinzel', serif;
             color: #888;
             font-size: 0.9rem;
             margin-bottom: 10px;
@@ -44,9 +46,7 @@
         }
 
         .asset-grid {
-            display: grid;
             grid-template-columns: repeat(2, 1fr);
-            gap: 10px;
         }
 
         .asset-item {
@@ -72,7 +72,6 @@
             height: 80px;
             object-fit: contain;
             background: #d4c5b0;
-            /* Parchment bg for preview */
         }
 
         .asset-item .preview-html {
@@ -105,7 +104,6 @@
             position: absolute;
             cursor: grab;
             user-select: none;
-            /* Important: Wrapper handles position, Inner handles animation */
             display: inline-block;
         }
 
@@ -122,7 +120,6 @@
             width: 100%;
             height: 100%;
             pointer-events: none;
-            /* Let clicks pass to wrapper */
         }
 
         .element-content img {
@@ -176,7 +173,6 @@
             border: 1px solid #444;
             padding: 8px 16px;
             cursor: pointer;
-            font-family: 'Cinzel', serif;
             transition: all 0.3s ease;
         }
 
@@ -196,11 +192,11 @@
         <div class="asset-category">
             <h3>Backgrounds</h3>
             <div class="asset-grid">
-                <div class="asset-item" onclick="setBackground('assets/elements/backgrounds/void_parchment_1.png')">
-                    <img src="assets/elements/backgrounds/void_parchment_1.png">
+                <div class="asset-item" onclick="setBackground('assets/static/elements/backgrounds/void_parchment_1.png')">
+                    <img src="assets/static/elements/backgrounds/void_parchment_1.png">
                 </div>
-                <div class="asset-item" onclick="setBackground('assets/elements/backgrounds/void_parchment_2.png')">
-                    <img src="assets/elements/backgrounds/void_parchment_2.png">
+                <div class="asset-item" onclick="setBackground('assets/static/elements/backgrounds/void_parchment_2.png')">
+                    <img src="assets/static/elements/backgrounds/void_parchment_2.png">
                 </div>
                 <!-- Standard Parchment BG -->
                 <div class="asset-item" onclick="setHTMLBackground('<div class=\'parchment-bg\'></div>')">
@@ -212,53 +208,53 @@
         <div class="asset-category">
             <h3>Glyphs</h3>
             <div class="asset-grid">
-                <div class="asset-item" onclick="addImage('assets/elements/glyphs/ink_enso_1.png')"><img
-                        src="assets/elements/glyphs/ink_enso_1.png"></div>
-                <div class="asset-item" onclick="addImage('assets/elements/glyphs/ink_enso_2.png')"><img
-                        src="assets/elements/glyphs/ink_enso_2.png"></div>
-                <div class="asset-item" onclick="addImage('assets/elements/glyphs/ink_enso_3.png')"><img
-                        src="assets/elements/glyphs/ink_enso_3.png"></div>
-                <div class="asset-item" onclick="addImage('assets/elements/glyphs/sigil_1.png')"><img
-                        src="assets/elements/glyphs/sigil_1.png"></div>
-                <div class="asset-item" onclick="addImage('assets/elements/glyphs/sigil_2.png')"><img
-                        src="assets/elements/glyphs/sigil_2.png"></div>
-                <div class="asset-item" onclick="addImage('assets/elements/glyphs/sigil_3.png')"><img
-                        src="assets/elements/glyphs/sigil_3.png"></div>
+                <div class="asset-item" onclick="addImage('assets/static/elements/glyphs/ink_enso_1.png')"><img
+                        src="assets/static/elements/glyphs/ink_enso_1.png"></div>
+                <div class="asset-item" onclick="addImage('assets/static/elements/glyphs/ink_enso_2.png')"><img
+                        src="assets/static/elements/glyphs/ink_enso_2.png"></div>
+                <div class="asset-item" onclick="addImage('assets/static/elements/glyphs/ink_enso_3.png')"><img
+                        src="assets/static/elements/glyphs/ink_enso_3.png"></div>
+                <div class="asset-item" onclick="addImage('assets/static/elements/glyphs/sigil_1.png')"><img
+                        src="assets/static/elements/glyphs/sigil_1.png"></div>
+                <div class="asset-item" onclick="addImage('assets/static/elements/glyphs/sigil_2.png')"><img
+                        src="assets/static/elements/glyphs/sigil_2.png"></div>
+                <div class="asset-item" onclick="addImage('assets/static/elements/glyphs/sigil_3.png')"><img
+                        src="assets/static/elements/glyphs/sigil_3.png"></div>
             </div>
         </div>
 
         <div class="asset-category">
             <h3>Creatures</h3>
             <div class="asset-grid">
-                <div class="asset-item" onclick="addImage('assets/elements/creatures/kangaroo_1.png')"><img
-                        src="assets/elements/creatures/kangaroo_1.png"></div>
-                <div class="asset-item" onclick="addImage('assets/elements/creatures/kangaroo_2.png')"><img
-                        src="assets/elements/creatures/kangaroo_2.png"></div>
-                <div class="asset-item" onclick="addImage('assets/elements/creatures/kangaroo_3.png')"><img
-                        src="assets/elements/creatures/kangaroo_3.png"></div>
-                <div class="asset-item" onclick="addImage('assets/elements/creatures/giraffe_1.png')"><img
-                        src="assets/elements/creatures/giraffe_1.png"></div>
-                <div class="asset-item" onclick="addImage('assets/elements/creatures/giraffe_2.png')"><img
-                        src="assets/elements/creatures/giraffe_2.png"></div>
-                <div class="asset-item" onclick="addImage('assets/elements/creatures/giraffe_3.png')"><img
-                        src="assets/elements/creatures/giraffe_3.png"></div>
+                <div class="asset-item" onclick="addImage('assets/static/elements/creatures/kangaroo_1.png')"><img
+                        src="assets/static/elements/creatures/kangaroo_1.png"></div>
+                <div class="asset-item" onclick="addImage('assets/static/elements/creatures/kangaroo_2.png')"><img
+                        src="assets/static/elements/creatures/kangaroo_2.png"></div>
+                <div class="asset-item" onclick="addImage('assets/static/elements/creatures/kangaroo_3.png')"><img
+                        src="assets/static/elements/creatures/kangaroo_3.png"></div>
+                <div class="asset-item" onclick="addImage('assets/static/elements/creatures/giraffe_1.png')"><img
+                        src="assets/static/elements/creatures/giraffe_1.png"></div>
+                <div class="asset-item" onclick="addImage('assets/static/elements/creatures/giraffe_2.png')"><img
+                        src="assets/static/elements/creatures/giraffe_2.png"></div>
+                <div class="asset-item" onclick="addImage('assets/static/elements/creatures/giraffe_3.png')"><img
+                        src="assets/static/elements/creatures/giraffe_3.png"></div>
             </div>
         </div>
 
         <div class="asset-category">
             <h3>UI Elements</h3>
             <div class="asset-grid">
-                <div class="asset-item" onclick="addImage('assets/elements/ui/ink_divider_1.png')"><img
-                        src="assets/elements/ui/ink_divider_1.png"></div>
-                <div class="asset-item" onclick="addImage('assets/elements/ui/ink_divider_2.png')"><img
-                        src="assets/elements/ui/ink_divider_2.png"></div>
-                <div class="asset-item" onclick="addImage('assets/elements/ui/ink_divider_3.png')"><img
-                        src="assets/elements/ui/ink_divider_3.png"></div>
-                <div class="asset-item" onclick="addImage('assets/elements/ui/void_orb_1.png')"><img
-                        src="assets/elements/ui/void_orb_1.png"></div>
-                <div class="asset-item" onclick="addImage('assets/elements/ui/void_orb_2.png')"><img
-                        src="assets/elements/ui/void_orb_2.png"></div>
-                <div class="asset-item" onclick="addImage('assets/elements/ui/void_orb_3.png')"><img <button
+                <div class="asset-item" onclick="addImage('assets/static/elements/ui/ink_divider_1.png')"><img
+                        src="assets/static/elements/ui/ink_divider_1.png"></div>
+                <div class="asset-item" onclick="addImage('assets/static/elements/ui/ink_divider_2.png')"><img
+                        src="assets/static/elements/ui/ink_divider_2.png"></div>
+                <div class="asset-item" onclick="addImage('assets/static/elements/ui/ink_divider_3.png')"><img
+                        src="assets/static/elements/ui/ink_divider_3.png"></div>
+                <div class="asset-item" onclick="addImage('assets/static/elements/ui/void_orb_1.png')"><img
+                        src="assets/static/elements/ui/void_orb_1.png"></div>
+                <div class="asset-item" onclick="addImage('assets/static/elements/ui/void_orb_2.png')"><img
+                        src="assets/static/elements/ui/void_orb_2.png"></div>
+                <div class="asset-item" onclick="addImage('assets/static/elements/ui/void_orb_3.png')"><img <button
                         class="nav-btn" style="width:100%; margin-bottom:10px;"
                         onclick="addText('THE UNWRITTEN', '3rem')">Add Title</button>
                     <button class="nav-btn" style="width:100%;" onclick="addText('Subtitle text...', '1.2rem')">Add
@@ -329,7 +325,8 @@
                     onclick="deleteSelected()">Delete Element</button>
             </div>
 
-            <script src="assets/js/unwritten_worlds_core.js"></script>
+            <!-- Shared JavaScript Library -->
+            <script src="assets/js/unwritten_worlds_common.js"></script>
             <script>
                 const canvas = document.getElementById('canvas');
                 let selectedEl = null;

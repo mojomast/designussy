@@ -1,0 +1,102 @@
+name: "P2: Architecture & Optimization"
+goals:
+  - "Refactor HTML files to eliminate code duplication"
+  - "Reorganize asset directory structure"
+  - "Implement caching layer for generated assets"
+  - "Add batch generation API endpoints"
+  - "Create modular generator architecture"
+  - "Optimize performance and memory usage"
+  - "Add comprehensive testing suite"
+status: "pending"
+tasks:
+  - id: "P2-T1"
+    desc: "Create shared component library for HTML files"
+    status: "pending"
+    accept:
+      - "Shared CSS file with common styles extracted"
+      - "Shared JavaScript file with common functionality"
+      - "HTML templates use consistent structure"
+      - "Reduced duplication by 70%+"
+    notes: "Eliminate copy-paste duplication across HTML files"
+  
+  - id: "P2-T2"
+    desc: "Reorganize asset directory structure for clarity"
+    status: "pending"
+    accept:
+      - "Clear separation: /generated, /elements, /effects"
+      - "Documentation on directory purposes"
+      - "Migration script for existing assets"
+      - "Backward compatibility maintained"
+    notes: "Current mixed organization is confusing"
+  
+  - id: "P2-T3"
+    desc: "Implement in-memory caching for generated assets"
+    status: "pending"
+    accept:
+      - "LRU cache for frequently accessed assets"
+      - "Configurable cache size and TTL"
+      - "Cache hit/miss metrics tracked"
+      - "Cache invalidation strategy defined"
+    notes: "Improve performance for repeated requests"
+  
+  - id: "P2-T4"
+    desc: "Add batch generation API endpoints"
+    status: "pending"
+    accept:
+      - "POST /generate/batch endpoint"
+      - "Accepts array of generation requests"
+      - "Returns array of generated assets"
+      - "Async processing with progress tracking"
+    notes: "Enable bulk asset generation for efficiency"
+  
+  - id: "P2-T5"
+    desc: "Refactor generator functions into modular architecture"
+    status: "pending"
+    accept:
+      - "Base generator class with common methods"
+      - "Individual generators inherit from base"
+      - "Plugin system for adding new generators"
+      - "Clean separation of concerns"
+    notes: "Current functions are monolithic and hard to extend"
+  
+  - id: "P2-T6"
+    desc: "Optimize PIL image generation performance"
+    status: "pending"
+    accept:
+      - "Profile generation functions for bottlenecks"
+      - "Optimize noise generation algorithms"
+      - "Reduce memory allocations"
+      - "Target: <200ms per simple asset"
+    notes: "Current generation can be slow for complex assets"
+  
+  - id: "P2-T7"
+    desc: "Add comprehensive unit test suite"
+    status: "pending"
+    accept:
+      - "pytest configuration set up"
+      - "All generator functions have unit tests"
+      - "API endpoints have integration tests"
+      - "Test coverage >80%"
+    notes: "Ensure code quality and prevent regressions"
+  
+  - id: "P2-T8"
+    desc: "Add end-to-end testing with Playwright"
+    status: "pending"
+    accept:
+      - "E2E tests for generation workflows"
+      - "UI interaction tests for frontend"
+      - "CI/CD integration configured"
+      - "Tests run in headless mode"
+    notes: "Validate complete user workflows"
+
+exit_criteria:
+  - "Code duplication eliminated"
+  - "Asset organization clear and documented"
+  - "Caching layer operational"
+  - "Batch generation API functional"
+  - "Modular architecture in place"
+  - "Performance targets met"
+  - "Test coverage >80%"
+  - "All tests passing"
+
+notes: "Architecture improvements enable scalability and maintainability. Testing ensures reliability."

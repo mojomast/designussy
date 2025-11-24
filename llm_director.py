@@ -65,24 +65,27 @@ def get_enso_params_from_prompt(prompt: str, api_key: str, model: str = "gpt-4o-
             },
             {
                 "role": "user",
-        if isinstance(content, list):
-            text = ''.join([p.get('text', '') if isinstance(p, dict) else str(p) for p in content])
-        else:
-            text = content
+                "content": prompt,
+            }
+        ],
+        "tools": [
+            {
+                "type": "function",
+                "function": json_schema
+            }
+        ],
+        "tool_choice": {"type": "function", "function": {"name": "enso_params"}},
+    }
 
-        if not isinstance(text, str) or not text.strip():
-            raise ValueError(f"Empty or non-text response: {str(content)[:200]}")
+    try:
+        response = requests.post(url, headers=headers, json=payload, timeout=30)
+        response.raise_for_status()
+        result = response.json()
 
-        try:
-            params_dict = json.loads(text)
-        except Exception:
-            # Try to extract JSON object from surrounding text
-            start = text.find('{')
-            end = text.rfind('}')
-            if start != -1 and end != -1 and end > start:
-                params_dict = json.loads(text[start:end+1])
-            else:
-                raise ValueError(f"Non-JSON response: {text[:200]}")
+        tool_call = result["choices"][0]["message"].get("tool_calls", [{}])[0]
+        function_args = tool_call.get("function", {}).get("arguments", "{}")
+
+        params_dict = json.loads(function_args)
 
         # Sanitize and clamp values
         color_hex = str(params_dict.get('color_hex', '#000000')).strip()

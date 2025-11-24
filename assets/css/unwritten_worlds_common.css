@@ -1,0 +1,941 @@
+/**
+ * Unwritten Worlds - Shared Component Library
+ * Common styles extracted from all HTML files
+ * Maintains the "Unwritten Worlds" aesthetic throughout
+ */
+
+@import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Cormorant+Garamond:ital,wght@0,400;0,700;1,400&family=Special+Elite&display=swap');
+
+/* =============================================================================
+   DESIGN SYSTEM VARIABLES
+   ============================================================================= */
+
+:root {
+  /* Core Color Palette */
+  --void-black: #0a0a0a;
+  --void-dark: #050505;
+  --bone-parchment: #d4c5b0;
+  --deep-ink: #000000;
+  --ghost-grey: #333333;
+  --text-color: #e0e0e0;
+  
+  /* Extended Palette */
+  --gold-color: #d4af37;
+  --overlay-dark: rgba(0, 0, 0, 0.7);
+  
+  /* Semantic Variables */
+  --bg-color: var(--void-black);
+  --ink-color: var(--bone-parchment);
+  --accent-color: var(--bone-parchment);
+}
+
+/* =============================================================================
+   BASE TYPOGRAPHY
+   ============================================================================= */
+
+body {
+  background-color: var(--bg-color);
+  color: var(--text-color);
+  font-family: 'Cormorant Garamond', serif;
+  margin: 0;
+  padding: 0;
+  -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: 'Cinzel', serif;
+  font-weight: 400;
+  letter-spacing: 0.1em;
+  color: var(--text-color);
+  margin: 0 0 1rem 0;
+}
+
+h1 {
+  font-size: 2rem;
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+}
+
+h2 {
+  font-size: 1.5rem;
+  letter-spacing: 0.2em;
+}
+
+h3 {
+  font-size: 1.2rem;
+  letter-spacing: 0.15em;
+}
+
+p {
+  font-family: 'Cormorant Garamond', serif;
+  line-height: 1.6;
+  margin: 0 0 1rem 0;
+}
+
+/* Font Utility Classes */
+.font-cinzel { font-family: 'Cinzel', serif; }
+.font-cormorant { font-family: 'Cormorant Garamond', serif; }
+.font-elite { font-family: 'Special Elite', cursive; }
+
+/* Text Color Utilities */
+.text-accent { color: var(--accent-color); }
+.text-gold { color: var(--gold-color); }
+.text-ink { color: var(--deep-ink); }
+.text-ghost { color: var(--ghost-grey); }
+
+/* Text Transformation Utilities */
+.uppercase { text-transform: uppercase; }
+.tracking-wide { letter-spacing: 0.2em; }
+.tracking-wider { letter-spacing: 0.3em; }
+
+/* =============================================================================
+   LAYOUT UTILITIES
+   ============================================================================= */
+
+.container {
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 20px;
+}
+
+.flex {
+  display: flex;
+}
+
+.flex-col {
+  flex-direction: column;
+}
+
+.flex-wrap {
+  flex-wrap: wrap;
+}
+
+.items-center {
+  align-items: center;
+}
+
+.justify-center {
+  justify-content: center;
+}
+
+.justify-between {
+  justify-content: space-between;
+}
+
+.text-center {
+  text-align: center;
+}
+
+/* =============================================================================
+   CORE VISUAL PRIMITIVES
+   ============================================================================= */
+
+/* Texture Overlay (Grain) */
+.texture-overlay {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0.08;
+  z-index: 9999;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
+}
+
+.noise-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 999;
+  opacity: 0.05;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
+}
+
+/* Ink Splatter Overlay */
+.ink-overlay {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  background-image: url('../static/effects/ink_splatter.png');
+  background-size: cover;
+  background-position: center;
+  mix-blend-mode: screen;
+  opacity: 0.6;
+  transition: opacity 0.5s ease, transform 5s ease;
+  pointer-events: none;
+}
+
+.ink-overlay:hover {
+  opacity: 0.9;
+  transform: scale(1.05);
+}
+
+/* Parchment Background */
+.parchment-bg {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  background-image: url('../static/effects/parchment.png');
+  background-size: cover;
+  background-position: center;
+  color: #3e2b14;
+  overflow: hidden;
+}
+
+.parchment-bg::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle, transparent 40%, rgba(0, 0, 0, 0.6) 100%);
+  pointer-events: none;
+}
+
+/* =============================================================================
+   CARD COMPONENTS
+   ============================================================================= */
+
+.concept-card {
+  position: relative;
+  width: 400px;
+  height: 400px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  background: radial-gradient(circle at center, #151515 0%, #0a0a0a 70%);
+  box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  overflow: hidden;
+}
+
+.concept-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 15px 40px rgba(0,0,0,0.7);
+}
+
+.effect-card {
+  background: #111;
+  border: 1px solid #222;
+  border-radius: 8px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  transition: transform 0.3s ease;
+}
+
+.effect-card:hover {
+  transform: translateY(-5px);
+  border-color: #333;
+}
+
+.logo-container {
+  background-color: #f4f1ea;
+  border-radius: 8px;
+  padding: 20px;
+  width: 300px;
+  height: 300px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+  transition: transform 0.2s;
+}
+
+.logo-container:hover {
+  transform: scale(1.02);
+}
+
+/* Card Labels */
+.label {
+  position: absolute;
+  bottom: 20px;
+  font-family: 'Cinzel', serif;
+  font-size: 0.8rem;
+  letter-spacing: 0.15em;
+  color: #555;
+  text-transform: uppercase;
+}
+
+.logo-label {
+  margin-top: 15px;
+  color: #333;
+  font-size: 0.9rem;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+/* =============================================================================
+   NAVIGATION COMPONENTS
+   ============================================================================= */
+
+.nav-overlay {
+  position: fixed;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 1000;
+  background: rgba(20, 20, 20, 0.9);
+  border: 1px solid #333;
+  padding: 10px 20px;
+  border-radius: 30px;
+  display: flex;
+  gap: 15px;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+}
+
+.nav-btn {
+  background: transparent;
+  border: 1px solid transparent;
+  color: #666;
+  cursor: pointer;
+  padding: 8px 16px;
+  font-family: 'Cinzel', serif;
+  font-size: 12px;
+  transition: all 0.3s ease;
+  border-radius: 20px;
+}
+
+.nav-btn:hover {
+  color: var(--accent-color);
+  border-color: #444;
+}
+
+.nav-btn.active {
+  color: var(--bg-color);
+  background: var(--accent-color);
+}
+
+/* Button Variants */
+.btn {
+  background: transparent;
+  border: 1px solid #444;
+  color: var(--accent-color);
+  padding: 8px 12px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-family: 'Cinzel', serif;
+  transition: all 0.3s ease;
+}
+
+.btn.primary {
+  background: var(--accent-color);
+  color: var(--bg-color);
+}
+
+.btn:hover {
+  background: #333;
+  border-color: #666;
+}
+
+/* =============================================================================
+   SVG FILTER CLASSES
+   ============================================================================= */
+
+.filter-rough-paper { filter: url(#rough-paper); }
+.filter-brush-stroke { filter: url(#brush-stroke); }
+.filter-ink-spread { filter: url(#ink-spread); }
+.filter-rough-edge { filter: url(#rough-edge); }
+.filter-ink-bleed { filter: url(#ink-bleed); }
+.filter-eroded { filter: url(#eroded); }
+.filter-glow { filter: url(#glow); }
+
+/* =============================================================================
+   ANIMATION KEYFRAMES
+   ============================================================================= */
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 0.5; }
+  50% { opacity: 1; }
+}
+
+@keyframes pulseText {
+  0%, 100% { opacity: 0; transform: scale(0.95); }
+  50% { opacity: 1; transform: scale(1.05); }
+}
+
+@keyframes spin {
+  100% { transform: rotate(360deg); }
+}
+
+@keyframes spinReverse {
+  100% { transform: rotate(-360deg); }
+}
+
+@keyframes slowSpin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+@keyframes drawCircle {
+  to { stroke-dashoffset: 0; }
+}
+
+@keyframes drawEnso {
+  0% { stroke-dashoffset: 600; transform: rotate(0deg); }
+  50% { stroke-dashoffset: 0; transform: rotate(10deg); }
+  100% { stroke-dashoffset: 600; transform: rotate(360deg); }
+}
+
+@keyframes drawSigil {
+  0% { stroke-dashoffset: 300; opacity: 0.3; }
+  100% { stroke-dashoffset: 0; opacity: 1; }
+}
+
+@keyframes loadProgress {
+  0% { width: 0%; }
+  20% { width: 15%; }
+  50% { width: 45%; }
+  70% { width: 80%; }
+  100% { width: 100%; }
+}
+
+@keyframes runePulse {
+  0% { filter: drop-shadow(0 0 2px rgba(255, 255, 255, 0.3)); opacity: 0.7; }
+  100% { filter: drop-shadow(0 0 15px rgba(200, 220, 255, 0.9)); opacity: 1; }
+}
+
+@keyframes flicker {
+  0% { opacity: 1; }
+  5% { opacity: 0.3; }
+  10% { opacity: 1; }
+  15% { opacity: 0.1; }
+  20% { opacity: 1; }
+  100% { opacity: 1; }
+}
+
+@keyframes typewrite {
+  0% { width: 0%; }
+  40% { width: 100%; }
+  60% { width: 100%; }
+  100% { width: 0%; border-right-color: transparent; }
+}
+
+@keyframes breathe {
+  0%, 100% { transform: scale(1); opacity: 0.3; }
+  50% { transform: scale(1.5); opacity: 1; }
+}
+
+@keyframes floatLetters {
+  0%, 100% { transform: translateY(0); color: #444; filter: blur(2px); }
+  50% { transform: translateY(-5px); color: #fff; filter: blur(0); }
+}
+
+@keyframes slideLoad {
+  0% { transform: translateX(-100%); }
+  50% { transform: translateX(0%); }
+  100% { transform: translateX(100%); }
+}
+
+/* Animation Utility Classes */
+.animate-flicker { animation: flicker 2s infinite; }
+.animate-pulse { animation: pulse 2s infinite; }
+.animate-spin { animation: spin 3s linear infinite; }
+.animate-slow-spin { animation: slowSpin 20s linear infinite; }
+
+/* =============================================================================
+   LOADING COMPONENTS
+   ============================================================================= */
+
+/* The Ink Enso Loader */
+.loader-enso {
+  position: relative;
+  width: 200px;
+  height: 200px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.loader-enso svg {
+  width: 100%;
+  height: 100%;
+  transform: rotate(-90deg);
+}
+
+.loader-enso path {
+  fill: none;
+  stroke: var(--deep-ink);
+  stroke-width: 10;
+  stroke-linecap: round;
+  stroke-dasharray: 600;
+  stroke-dashoffset: 600;
+  animation: drawEnso 4s ease-in-out infinite;
+  filter: url(#ink-spread);
+}
+
+.loader-enso .label {
+  position: absolute;
+  font-family: 'Cinzel', serif;
+  font-size: 1.2rem;
+  letter-spacing: 0.2em;
+  animation: pulseText 4s ease-in-out infinite;
+  color: var(--deep-ink);
+}
+
+/* The Eternal Cycle Loader */
+.loader-cycle {
+  width: 150px;
+  height: 150px;
+  border-radius: 50%;
+  border: 2px solid #333;
+  position: relative;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  box-shadow: 0 0 30px rgba(0, 0, 0, 0.5);
+}
+
+.loader-cycle .snake {
+  position: absolute;
+  inset: -5px;
+  border-radius: 50%;
+  border: 5px solid transparent;
+  border-top-color: var(--accent-color);
+  border-right-color: rgba(212, 197, 176, 0.3);
+  animation: spin 3s linear infinite;
+  filter: drop-shadow(0 0 5px var(--accent-color));
+}
+
+.loader-cycle .snake::before {
+  content: '';
+  position: absolute;
+  inset: 10px;
+  border-radius: 50%;
+  border: 2px dashed #555;
+  animation: spinReverse 10s linear infinite;
+}
+
+.loader-cycle .text {
+  font-family: 'Special Elite', cursive;
+  color: var(--accent-color);
+  font-size: 0.7rem;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+}
+
+/* The Unwriting Loader */
+.loader-unwriting {
+  font-family: 'Cinzel', serif;
+  font-size: 2.5rem;
+  position: relative;
+  color: transparent;
+  -webkit-text-stroke: 1px rgba(255, 255, 255, 0.2);
+}
+
+.loader-unwriting::before {
+  content: attr(data-text);
+  position: absolute;
+  top: 0;
+  left: 0;
+  color: var(--text-color);
+  width: 0%;
+  overflow: hidden;
+  white-space: nowrap;
+  border-right: 2px solid var(--text-color);
+  animation: typewrite 4s steps(10) infinite alternate;
+  filter: drop-shadow(0 0 8px rgba(255, 255, 255, 0.5));
+}
+
+/* Abyssal Text Loader */
+.loader-abyss {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 15px;
+}
+
+.loader-abyss .rune {
+  width: 40px;
+  height: 40px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 50%;
+  animation: breathe 4s ease-in-out infinite;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.loader-abyss .rune-dot {
+  width: 6px;
+  height: 6px;
+  background: #fff;
+  border-radius: 50%;
+  box-shadow: 0 0 15px #fff;
+}
+
+.loader-abyss .word {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 1.2rem;
+  letter-spacing: 0.5rem;
+  color: #666;
+  text-transform: uppercase;
+}
+
+.loader-abyss .word span {
+  display: inline-block;
+  animation: floatLetters 3s ease-in-out infinite;
+}
+
+.loader-abyss .word span:nth-child(odd) { animation-delay: 0.2s; }
+.loader-abyss .word span:nth-child(even) { animation-delay: 0.5s; }
+
+/* The Artifact Loader */
+.loader-artifact {
+  text-align: center;
+}
+
+.loader-artifact .symbol {
+  font-size: 3rem;
+  color: #2a2622;
+  text-shadow: 0 0 2px var(--accent-color);
+  font-family: 'Cinzel', serif;
+  animation: flicker 2s infinite;
+}
+
+.loader-artifact .bar-container {
+  width: 150px;
+  height: 3px;
+  background: #2a2622;
+  position: relative;
+  margin: 15px auto;
+  overflow: hidden;
+}
+
+.loader-artifact .bar {
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 100%;
+  width: 100%;
+  background: var(--accent-color);
+  transform: translateX(-100%);
+  animation: slideLoad 2.5s cubic-bezier(0.8, 0, 0.2, 1) infinite;
+}
+
+.loader-artifact .label {
+  font-family: 'Special Elite', monospace;
+  color: #888;
+  font-size: 0.7rem;
+}
+
+/* =============================================================================
+   SHOWCASE/GRID LAYOUTS
+   ============================================================================= */
+
+.showcase {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 60px;
+  padding: 20px;
+  width: 100%;
+  max-width: 1200px;
+}
+
+.library-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 40px;
+  width: 100%;
+  max-width: 1200px;
+}
+
+.gallery-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 20px;
+  width: 100%;
+  max-width: 1200px;
+}
+
+/* =============================================================================
+   EXAMPLE CONTAINER (for loading examples)
+   ============================================================================= */
+
+.example-container {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  display: none;
+  justify-content: center;
+  align-items: center;
+  flex-direction: column;
+}
+
+.example-container.active {
+  display: flex;
+  animation: fadeIn 1s ease-in-out;
+}
+
+/* =============================================================================
+   RESPONSIVE UTILITIES
+   ============================================================================= */
+
+@media (max-width: 768px) {
+  .showcase {
+    gap: 30px;
+    padding: 10px;
+  }
+  
+  .concept-card {
+    width: 350px;
+    height: 350px;
+  }
+  
+  .library-grid {
+    grid-template-columns: 1fr;
+    gap: 20px;
+  }
+  
+  h1 {
+    font-size: 1.5rem;
+  }
+  
+  .nav-overlay {
+    flex-wrap: wrap;
+    gap: 10px;
+    padding: 8px 15px;
+  }
+  
+  .nav-btn {
+    font-size: 11px;
+    padding: 6px 12px;
+  }
+}
+
+/* =============================================================================
+   UTILITY CLASSES
+   ============================================================================= */
+
+.opacity-0 { opacity: 0; }
+.opacity-50 { opacity: 0.5; }
+.opacity-100 { opacity: 1; }
+
+.pointer-events-none { pointer-events: none; }
+.pointer-events-auto { pointer-events: auto; }
+
+.z-0 { z-index: 0; }
+.z-10 { z-index: 10; }
+.z-100 { z-index: 100; }
+.z-1000 { z-index: 1000; }
+.z-9999 { z-index: 9999; }
+
+.overflow-hidden { overflow: hidden; }
+.overflow-visible { overflow: visible; }
+
+.shadow-sm { box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+.shadow-md { box-shadow: 0 4px 8px rgba(0,0,0,0.2); }
+.shadow-lg { box-shadow: 0 8px 16px rgba(0,0,0,0.3); }
+.shadow-xl { box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+
+.border { border: 1px solid #333; }
+.border-0 { border: none; }
+
+.rounded { border-radius: 4px; }
+.rounded-lg { border-radius: 8px; }
+
+/* =============================================================================
+   COMPONENT-SPECIFIC OVERRIDES
+   ============================================================================= */
+
+/* Ink Text (for SVG) */
+.ink-text {
+  font-family: 'Cinzel', serif;
+  font-weight: 700;
+  fill: var(--ink-color);
+  text-anchor: middle;
+  letter-spacing: 0.1em;
+  filter: url(#rough-paper);
+}
+
+/* Brush Circle (for SVG) */
+.brush-circle {
+  fill: none;
+  stroke: var(--ink-color);
+  stroke-width: 15;
+  stroke-linecap: round;
+  filter: url(#brush-stroke);
+  stroke-dasharray: 600;
+  stroke-dashoffset: 600;
+  animation: drawCircle 3s ease-out forwards;
+  transform-origin: center;
+  transform: rotate(-90deg);
+}
+
+/* Sigil Path (for SVG) */
+.sigil-path {
+  fill: none;
+  stroke: var(--ink-color);
+  stroke-width: 2;
+  filter: url(#glow);
+  stroke-dasharray: 300;
+  stroke-dashoffset: 300;
+  animation: drawSigil 4s ease-in-out infinite alternate;
+}
+
+/* Loading Bar */
+.loading-bar-container {
+  position: absolute;
+  top: 60%;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 140px;
+  height: 2px;
+  background: #333;
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.loading-bar {
+  height: 100%;
+  width: 0%;
+  background: var(--ink-color);
+  animation: loadProgress 4s 2s ease-in-out forwards;
+  box-shadow: 0 0 5px rgba(230, 225, 211, 0.5);
+}
+
+/* Dragon Ring (Ouroboros) */
+.dragon-ring {
+  width: 280px;
+  height: 280px;
+  animation: slowRotate 60s linear infinite;
+}
+
+/* Loading Text */
+.loading-text {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-family: 'Cinzel', serif;
+  font-size: 0.8rem;
+  letter-spacing: 0.1em;
+  opacity: 0;
+  animation: fadeIn 1s 1s forwards;
+  text-align: center;
+  width: 100%;
+  margin-top: 0;
+}
+
+/* Ouroboros Container */
+.ouroboros-container {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Effect Preview */
+.effect-preview {
+  height: 250px;
+  position: relative;
+  overflow: hidden;
+  background: #050505;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.effect-info {
+  padding: 20px;
+  border-top: 1px solid #222;
+  background: #0e0e0e;
+}
+
+.code-snippet {
+  margin-top: 15px;
+  background: #000;
+  padding: 10px;
+  border-radius: 4px;
+  font-family: monospace;
+  font-size: 0.8rem;
+  color: #aaa;
+  overflow-x: auto;
+}
+
+/* Asset Grid */
+.asset-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
+}
+
+.asset-item {
+  background: #1a1a1a;
+  border: 1px solid #333;
+  border-radius: 4px;
+  cursor: pointer;
+  padding: 5px;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 80px;
+}
+
+.asset-item:hover {
+  border-color: var(--accent-color);
+  background: #222;
+}
+
+.asset-item img {
+  width: 100%;
+  height: 80px;
+  object-fit: contain;
+  background: var(--bone-parchment);
+}
+
+/* Gallery Item */
+.gallery-item {
+  position: relative;
+  border: 1px solid #333;
+  border-radius: 8px;
+  overflow: hidden;
+  aspect-ratio: 1;
+  transition: transform 0.3s ease;
+}
+
+.gallery-item:hover {
+  transform: scale(1.05);
+  border-color: var(--accent-color);
+  z-index: 10;
+}
+
+.gallery-item img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.gallery-label {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  background: rgba(0,0,0,0.7);
+  color: #fff;
+  font-size: 10px;
+  padding: 4px;
+  text-align: center;
+  font-family: monospace;
+}
+
+/* =============================================================================
+   END OF SHARED COMPONENT LIBRARY
+   ============================================================================= */

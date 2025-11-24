@@ -4,16 +4,11 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Unwritten Worlds - Loading Concepts</title>
+    <!-- Shared Component Library -->
+    <link rel="stylesheet" href="assets/css/unwritten_worlds_common.css">
+    
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Cormorant+Garamond:ital,wght@0,400;0,600;1,400&family=Special+Elite&display=swap');
-
-        :root {
-            --bg-color: #0a0a0a;
-            --text-color: #e0e0e0;
-            --accent-color: #d4c5b0; /* Parchment/Bone */
-            --ink-color: #000000;
-        }
-
+        /* Loading examples specific styles */
         * {
             box-sizing: border-box;
             margin: 0;
@@ -21,9 +16,6 @@
         }
 
         body {
-            background-color: var(--bg-color);
-            color: var(--text-color);
-            font-family: 'Cormorant Garamond', serif;
             overflow: hidden;
             height: 100vh;
             width: 100vw;
@@ -51,7 +43,6 @@
             color: #666;
             cursor: pointer;
             padding: 8px 16px;
-            font-family: 'Cinzel', serif;
             font-size: 12px;
             transition: all 0.3s ease;
             border-radius: 20px;
@@ -65,19 +56,6 @@
         .nav-btn.active {
             color: var(--bg-color);
             background: var(--accent-color);
-        }
-
-        /* Shared Grain/Texture Overlay */
-        .texture-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            pointer-events: none;
-            z-index: 900;
-            opacity: 0.08;
-            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
         }
 
         /* Container for examples */
@@ -96,11 +74,6 @@
         .example-container.active {
             display: flex;
             animation: fadeIn 1s ease-in-out;
-        }
-
-        @keyframes fadeIn {
-            from { opacity: 0; }
-            to { opacity: 1; }
         }
 
         /* --- EXAMPLE 1: THE INK ENSO --- */
@@ -560,32 +533,32 @@
         <h2 style="font-family:'Cinzel'; margin-bottom:20px;">GENERATED ASSETS</h2>
         <div class="gallery-grid">
             <!-- Void Parchments -->
-            <div class="gallery-item"><img src="assets/generated/void_parchment_1.png"><div class="gallery-label">Void 1</div></div>
-            <div class="gallery-item"><img src="assets/generated/void_parchment_2.png"><div class="gallery-label">Void 2</div></div>
-            <div class="gallery-item"><img src="assets/generated/void_parchment_3.png"><div class="gallery-label">Void 3</div></div>
-            <div class="gallery-item"><img src="assets/generated/void_parchment_4.png"><div class="gallery-label">Void 4</div></div>
-            <div class="gallery-item"><img src="assets/generated/void_parchment_5.png"><div class="gallery-label">Void 5</div></div>
+            <div class="gallery-item"><img src="assets/generated/backgrounds/void_parchment_1.png"><div class="gallery-label">Void 1</div></div>
+            <div class="gallery-item"><img src="assets/generated/backgrounds/void_parchment_2.png"><div class="gallery-label">Void 2</div></div>
+            <div class="gallery-item"><img src="assets/generated/backgrounds/void_parchment_3.png"><div class="gallery-label">Void 3</div></div>
+            <div class="gallery-item"><img src="assets/generated/backgrounds/void_parchment_4.png"><div class="gallery-label">Void 4</div></div>
+            <div class="gallery-item"><img src="assets/generated/backgrounds/void_parchment_5.png"><div class="gallery-label">Void 5</div></div>
             
             <!-- Ink Ensos -->
-            <div class="gallery-item"><img src="assets/generated/ink_enso_1.png"><div class="gallery-label">Enso 1</div></div>
-            <div class="gallery-item"><img src="assets/generated/ink_enso_2.png"><div class="gallery-label">Enso 2</div></div>
-            <div class="gallery-item"><img src="assets/generated/ink_enso_3.png"><div class="gallery-label">Enso 3</div></div>
-            <div class="gallery-item"><img src="assets/generated/ink_enso_4.png"><div class="gallery-label">Enso 4</div></div>
-            <div class="gallery-item"><img src="assets/generated/ink_enso_5.png"><div class="gallery-label">Enso 5</div></div>
+            <div class="gallery-item"><img src="assets/generated/glyphs/ink_enso_1.png"><div class="gallery-label">Enso 1</div></div>
+            <div class="gallery-item"><img src="assets/generated/glyphs/ink_enso_2.png"><div class="gallery-label">Enso 2</div></div>
+            <div class="gallery-item"><img src="assets/generated/glyphs/ink_enso_3.png"><div class="gallery-label">Enso 3</div></div>
+            <div class="gallery-item"><img src="assets/generated/glyphs/ink_enso_4.png"><div class="gallery-label">Enso 4</div></div>
+            <div class="gallery-item"><img src="assets/generated/glyphs/ink_enso_5.png"><div class="gallery-label">Enso 5</div></div>
             
             <!-- Sigils -->
-            <div class="gallery-item"><img src="assets/generated/sigil_1.png"><div class="gallery-label">Sigil 1</div></div>
-            <div class="gallery-item"><img src="assets/generated/sigil_2.png"><div class="gallery-label">Sigil 2</div></div>
-            <div class="gallery-item"><img src="assets/generated/sigil_3.png"><div class="gallery-label">Sigil 3</div></div>
-            <div class="gallery-item"><img src="assets/generated/sigil_4.png"><div class="gallery-label">Sigil 4</div></div>
-            <div class="gallery-item"><img src="assets/generated/sigil_5.png"><div class="gallery-label">Sigil 5</div></div>
+            <div class="gallery-item"><img src="assets/generated/glyphs/sigil_1.png"><div class="gallery-label">Sigil 1</div></div>
+            <div class="gallery-item"><img src="assets/generated/glyphs/sigil_2.png"><div class="gallery-label">Sigil 2</div></div>
+            <div class="gallery-item"><img src="assets/generated/glyphs/sigil_3.png"><div class="gallery-label">Sigil 3</div></div>
+            <div class="gallery-item"><img src="assets/generated/glyphs/sigil_4.png"><div class="gallery-label">Sigil 4</div></div>
+            <div class="gallery-item"><img src="assets/generated/glyphs/sigil_5.png"><div class="gallery-label">Sigil 5</div></div>
 
             <!-- Giraffes -->
-            <div class="gallery-item"><img src="assets/generated/giraffe_1.png"><div class="gallery-label">Giraffe 1</div></div>
-            <div class="gallery-item"><img src="assets/generated/giraffe_2.png"><div class="gallery-label">Giraffe 2</div></div>
-            <div class="gallery-item"><img src="assets/generated/giraffe_3.png"><div class="gallery-label">Giraffe 3</div></div>
-            <div class="gallery-item"><img src="assets/generated/giraffe_4.png"><div class="gallery-label">Giraffe 4</div></div>
-            <div class="gallery-item"><img src="assets/generated/giraffe_5.png"><div class="gallery-label">Giraffe 5</div></div>
+            <div class="gallery-item"><img src="assets/generated/creatures/giraffe_1.png"><div class="gallery-label">Giraffe 1</div></div>
+            <div class="gallery-item"><img src="assets/generated/creatures/giraffe_2.png"><div class="gallery-label">Giraffe 2</div></div>
+            <div class="gallery-item"><img src="assets/generated/creatures/giraffe_3.png"><div class="gallery-label">Giraffe 3</div></div>
+            <div class="gallery-item"><img src="assets/generated/creatures/giraffe_4.png"><div class="gallery-label">Giraffe 4</div></div>
+            <div class="gallery-item"><img src="assets/generated/creatures/giraffe_5.png"><div class="gallery-label">Giraffe 5</div></div>
         </div>
     </div>
 
@@ -651,7 +624,7 @@
             <div class="void-ring ring-1"></div>
             <div class="void-ring ring-2"></div>
             <div class="void-ring ring-3"></div>
-            <img class="void-kangaroo" src="assets/generated/kangaroo_1.png" alt="Void Kangaroo">
+            <img class="void-kangaroo" src="assets/generated/creatures/kangaroo_1.png" alt="Void Kangaroo">
         </div>
         <h2 style="position:absolute; top:20%; font-family:'Cinzel'; opacity:0.5;">TRAVERSING THE VOID...</h2>
     </div>
@@ -784,5 +757,8 @@
             if(btns[id-1]) btns[id-1].classList.add('active');
         }
     </script>
+    
+    <!-- Shared JavaScript Library -->
+    <script src="assets/js/unwritten_worlds_common.js"></script>
 </body>
 </html>

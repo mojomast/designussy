@@ -1,0 +1,79 @@
+{
+  "name": "NanoBanana Protocol",
+  "summary": "Production-ready procedural generation system for eldritch/ink-themed assets with LLM-directed creative control",
+  "languages": ["Python", "JavaScript", "HTML", "CSS"],
+  "frameworks": ["FastAPI", "Uvicorn", "Pillow", "NumPy"],
+  "apis": ["OpenAI Compatible API", "Custom REST API"],
+  "runtime": {
+    "frontend": "Modern browsers (Chrome 90+, Firefox 88+)",
+    "backend": "Python 3.10+ with ASGI server",
+    "infra": "Docker containers on cloud hosting"
+  },
+  "requirements": [
+    "Secure API authentication with configurable CORS",
+    "Procedural asset generation with customizable parameters",
+    "LLM-directed creative control via OpenAI/Requesty APIs",
+    "File-based asset storage with organized directory structure",
+    "Fast generation (<500ms simple, <3s LLM-directed)",
+    "Error handling and graceful fallbacks",
+    "Modular architecture for extensibility",
+    "Comprehensive testing coverage"
+  ],
+  "non_goals": [
+    "Full CMS or user management system",
+    "Real-time collaborative editing",
+    "Mobile-first responsive design",
+    "Multi-tenant architecture"
+  ],
+  "data": {
+    "storage": "File system (assets/generated/, assets/elements/, assets/effects/)",
+    "schema_notes": [
+      "No database - stateless generation",
+      "Asset metadata in filenames: {type}_{index}.png",
+      "Configuration in .env file"
+    ]
+  },
+  "security": {
+    "auth": "API key via headers (X-API-Key), fallback to .env",
+    "secrets": ".env file (dev), environment variables (prod), never logged"
+  },
+  "testing": {
+    "levels": ["unit", "integration", "e2e"],
+    "tools": ["pytest", "pytest-cov", "Playwright"]
+  },
+  "deployment": {
+    "envs": ["development", "production"],
+    "target": "Docker containers on cloud provider (AWS ECS, Railway, Render)"
+  },
+  "constraints": {
+    "perf": "<500ms simple generation, <3s LLM-directed",
+    "cost": "~$5-20/month hosting, ~$0.01-0.05 per LLM generation",
+    "latency_ms": 3000
+  },
+  "risks": [
+    {
+      "risk": "LLM API downtime",
+      "mitigation": "Graceful fallback to random generation"
+    },
+    {
+      "risk": "CORS misconfiguration",
+      "mitigation": "Configurable origins, health checks"
+    },
+    {
+      "risk": "Memory leaks in PIL",
+      "mitigation": "Periodic restart strategy, memory monitoring"
+    },
+    {
+      "risk": "API key exposure",
+      "mitigation": "Environment variables, key rotation"
+    },
+    {
+      "risk": "Code corruption",
+      "mitigation": "Version control, automated testing"
+    },
+    {
+      "risk": "Asset duplication",
+      "mitigation": "Deduplication, cache invalidation"
+    }
+  ]
+}

@@ -4,46 +4,24 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Unwritten Worlds - Logo Concepts</title>
+    <!-- Shared Component Library -->
+    <link rel="stylesheet" href="assets/css/unwritten_worlds_common.css">
+    
     <style>
+        /* Logo-specific styles */
         body {
-            background-color: #1a1a1a;
-            color: #e0e0e0;
-            font-family: 'Georgia', 'Times New Roman', serif;
             display: flex;
             flex-wrap: wrap;
             justify-content: center;
             gap: 40px;
             padding: 40px;
         }
-        .logo-container {
-            background-color: #f4f1ea; /* Parchment color */
-            border-radius: 8px;
-            padding: 20px;
-            width: 300px;
-            height: 300px;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.5);
-            transition: transform 0.2s;
-        }
-        .logo-container:hover {
-            transform: scale(1.02);
-        }
-        .logo-label {
-            margin-top: 15px;
-            color: #333;
-            font-size: 0.9rem;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-        }
         svg {
             width: 200px;
             height: 200px;
             overflow: visible;
         }
-        /* Common styles for the logos */
+        /* Logo-specific SVG styles */
         .ink-black { fill: #111; stroke: none; }
         .ink-stroke { fill: none; stroke: #111; stroke-width: 3; stroke-linecap: round; }
         .text-main { font-family: 'Georgia', serif; font-weight: bold; fill: #111; text-anchor: middle; }
@@ -161,5 +139,7 @@
         <div class="logo-label">5. The Monogram</div>
     </div>
 
+    <!-- Shared JavaScript Library -->
+    <script src="assets/js/unwritten_worlds_common.js"></script>
 </body>
 </html>
