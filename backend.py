@@ -11,15 +11,29 @@ import asyncio
 from typing import Any
 from datetime import datetime
 from dotenv import load_dotenv
-from generate_assets import create_void_parchment, create_ink_enso, create_sigil, create_giraffe, create_kangaroo
+
+# Import cache and batch job utilities
 from utils.cache import get_cache
 from utils.batch_job import (
     get_job_manager, BatchRequest, GenerationRequest, BatchOptions,
     JobStatus, AssetResult
 )
+
+# Import rate limiting
 from slowapi import Limiter, _rate_limit_exceeded_handler
 from slowapi.util import get_remote_address
 from slowapi.errors import RateLimitExceeded
+
+# Import legacy generator functions for backward compatibility
+from generate_assets import create_void_parchment, create_ink_enso, create_sigil, create_giraffe, create_kangaroo
+
+# Import new modular generator system
+from generators import get_generator, default_factory, list_generators
+
+# Import advanced generation components
+from generators.schemas import GenerationParameters, GenerationRequest, PresetRequest, ParameterValidationResult
+from generators.presets import get_preset_manager
+from generators.color_utils import ColorPaletteManager
 
 # Load environment variables from .env
 from pathlib import Path
@@ -145,6 +159,81 @@ def health_check():
         app.start_time = time.time()
     
     return health_status
+
+@app.get("/generators")
+def get_available_generators():
+    """
+    List all available generator types in the modular system.
+    
+    Returns:
+        Dictionary with available generator types and their information
+    """
+    try:
+        generators = list_generators()
+        generator_info = {}
+        
+        for gen_type in generators:
+            try:
+                info = default_factory.get_generator_info(gen_type)
+                generator_info[gen_type] = info
+            except Exception as e:
+                generator_info[gen_type] = {"error": str(e)}
+        
+        return {
+            "status": "success",
+            "generators": generator_info,
+            "total_generators": len(generators),
+            "timestamp": datetime.utcnow().isoformat() + "Z"
+        }
+    except Exception as e:
+        print(f"❌ Generator List Error: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to list generators: {str(e)}")
+
+@app.get("/generate/modular/{generator_type}")
+def generate_modular_asset(generator_type: str, width: int = None, height: int = None, **kwargs):
+    """
+    Generate an asset using the new modular generator system.
+    
+    Args:
+        generator_type: Type of generator to use
+        width: Optional width override
+        height: Optional height override
+        **kwargs: Additional generator-specific parameters
+        
+    Returns:
+        PNG image of the generated asset
+    """
+    try:
+        # Validate generator type exists
+        available_generators = list_generators()
+        if generator_type not in available_generators:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Unknown generator type '{generator_type}'. Available: {available_generators}"
+            )
+        
+        # Build configuration
+        config = kwargs.copy()
+        if width is not None:
+            config['width'] = width
+        if height is not None:
+            config['height'] = height
+            
+        # Create generator using factory
+        generator = default_factory.create_generator(generator_type, **config)
+        
+        # Generate asset
+        img = generator.generate(**kwargs)
+        
+        # Return as image
+        print(f"✨ Generated {generator_type} using modular system")
+        return serve_pil_image(img)
+        
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        print(f"❌ Modular Generation Error for {generator_type}: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to generate {generator_type}: {str(e)}")
 
 @app.get("/models")
 def get_models(
@@ -381,8 +470,8 @@ async def clear_cache():
         raise HTTPException(status_code=500, detail=f"Failed to clear cache: {str(e)}")
 
 
-# Asset generation function mapping
-GENERATION_FUNCTIONS = {
+# Asset generation function mapping for backward compatibility
+LEGACY_GENERATION_FUNCTIONS = {
     'parchment': create_void_parchment,
     'enso': create_ink_enso,
     'sigil': create_sigil,
@@ -390,14 +479,24 @@ GENERATION_FUNCTIONS = {
     'kangaroo': create_kangaroo,
 }
 
+# Unified generation function mapping (supports both legacy and modern)
+GENERATION_FUNCTIONS = {
+    'parchment': 'parchment',
+    'enso': 'enso',
+    'sigil': 'sigil',
+    'giraffe': 'giraffe',
+    'kangaroo': 'kangaroo',
+}
 
-def generate_single_asset(asset_type: str, parameters: dict = None) -> Any:
+
+def generate_single_asset(asset_type: str, parameters: dict = None, use_modern: bool = True) -> Any:
     """
     Generate a single asset with error handling.
     
     Args:
         asset_type: Type of asset to generate
         parameters: Optional generation parameters
+        use_modern: Whether to use the new modular system (default: True)
         
     Returns:
         Generated PIL image
@@ -408,26 +507,58 @@ def generate_single_asset(asset_type: str, parameters: dict = None) -> Any:
     if asset_type not in GENERATION_FUNCTIONS:
         raise ValueError(f"Unknown asset type: {asset_type}")
     
-    func = GENERATION_FUNCTIONS[asset_type]
-    
-    # Check cache first
-    cache_key = f"batch_{asset_type}_{hash(str(parameters))}"
+    # Check cache first with system type in key
+    cache_key = f"batch_{asset_type}_{'modern' if use_modern else 'legacy'}_{hash(str(parameters))}"
     cached_img = cache.get(asset_type, cache_key)
     if cached_img is not None:
-        print(f"📦 Serving {asset_type} from cache (batch)")
+        print(f"📦 Serving {asset_type} from cache ({'modern' if use_modern else 'legacy'} batch)")
         return cached_img
     
-    # Generate new asset
-    if parameters:
-        img = func(index=None, **parameters)
-    else:
-        img = func(index=None)
+    img = None
+    modern_system_used = False
     
-    # Cache the result
+    if use_modern:
+        # Try new modular system first
+        try:
+            generator = default_factory.create_generator(asset_type, **(parameters or {}))
+            img = generator.generate(**(parameters or {}))
+            modern_system_used = True
+            print(f"✨ Generated new {asset_type} using modern system (batch)")
+        except Exception as e:
+            print(f"⚠️ Modern system failed for {asset_type}, falling back to legacy: {e}")
+    
+    if img is None:
+        # Fall back to legacy system
+        img = _generate_legacy_asset(asset_type, parameters)
+        print(f"✨ Generated new {asset_type} using legacy system (batch)")
+    
+    # Cache the result with system type in key
+    cache_key = f"batch_{asset_type}_{'modern' if modern_system_used else 'legacy'}_{hash(str(parameters))}"
     cache.set(asset_type, img, cache_key)
-    print(f"✨ Generated new {asset_type} and cached it (batch)")
     
     return img
+
+
+def _generate_legacy_asset(asset_type: str, parameters: dict = None) -> Any:
+    """
+    Generate asset using legacy system for backward compatibility.
+    
+    Args:
+        asset_type: Type of asset to generate
+        parameters: Optional generation parameters
+        
+    Returns:
+        Generated PIL image
+    """
+    if asset_type not in LEGACY_GENERATION_FUNCTIONS:
+        raise ValueError(f"Unknown legacy asset type: {asset_type}")
+    
+    func = LEGACY_GENERATION_FUNCTIONS[asset_type]
+    
+    if parameters:
+        return func(index=None, **parameters)
+    else:
+        return func(index=None)
 
 
 async def process_batch_job(job_id: str, batch_request: BatchRequest):
@@ -508,9 +639,8 @@ async def process_batch_job(job_id: str, batch_request: BatchRequest):
 
 
 @app.post("/generate/batch")
-@limiter.limit("10/minute")
 async def generate_batch(
-    request: BatchRequest,
+    batch_request: BatchRequest,
     background_tasks: BackgroundTasks
 ):
     """
@@ -521,10 +651,10 @@ async def generate_batch(
     """
     try:
         # Create new job
-        job = job_manager.create_job(request)
+        job = job_manager.create_job(batch_request)
         
         # Start processing in background
-        background_tasks.add_task(process_batch_job, job.job_id, request)
+        background_tasks.add_task(process_batch_job, job.job_id, batch_request)
         
         return {
             "job_id": job.job_id,
@@ -541,7 +671,6 @@ async def generate_batch(
 
 
 @app.get("/generate/batch/{job_id}/status")
-@limiter.limit("60/minute")
 async def get_batch_status(job_id: str):
     """
     Get the status of a batch generation job.
@@ -588,7 +717,6 @@ async def get_batch_status(job_id: str):
 
 
 @app.post("/generate/batch/{job_id}/cancel")
-@limiter.limit("30/minute")
 async def cancel_batch_job(job_id: str):
     """
     Cancel a running batch generation job.
@@ -615,7 +743,6 @@ async def cancel_batch_job(job_id: str):
 
 
 @app.get("/jobs")
-@limiter.limit("30/minute")
 async def list_jobs():
     """
     List all batch jobs with their current status.
@@ -648,6 +775,298 @@ async def list_jobs():
     except Exception as e:
         print(f"❌ List Jobs Error: {e}")
         raise HTTPException(status_code=500, detail=f"Failed to list jobs: {str(e)}")
+
+
+# ==================== Advanced Generation Endpoints ====================
+
+@app.post("/generate/advanced/parchment")
+@limiter.limit("10/minute")
+async def generate_advanced_parchment(request: Request, generation_request: GenerationRequest):
+    """
+    Generate parchment with advanced parameters.
+    
+    Provides fine-grained control over quality, style, color palettes, and effects.
+    """
+    try:
+        if generation_request.asset_type != "parchment":
+            raise HTTPException(status_code=400, detail="Invalid asset type for this endpoint")
+        
+        # Get final parameters
+        parameters = generation_request.get_final_parameters()
+        
+        # Create generator
+        generator = default_factory.create_generator("parchment",
+                                                   width=parameters.width,
+                                                   height=parameters.height,
+                                                   seed=parameters.seed)
+        
+        # Generate with advanced parameters
+        img = generator.generate(parameters=parameters)
+        
+        print(f"✨ Generated advanced parchment with quality={parameters.quality}")
+        return serve_pil_image(img)
+        
+    except Exception as e:
+        print(f"❌ Advanced Parchment Generation Error: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to generate advanced parchment: {str(e)}")
+
+
+@app.post("/generate/advanced/enso")
+@limiter.limit("10/minute")
+async def generate_advanced_enso(request: Request, generation_request: GenerationRequest):
+    """
+    Generate enso with advanced parameters.
+    
+    Provides fine-grained control over brush style, chaos, and artistic effects.
+    """
+    try:
+        if generation_request.asset_type != "enso":
+            raise HTTPException(status_code=400, detail="Invalid asset type for this endpoint")
+        
+        # Get final parameters
+        parameters = generation_request.get_final_parameters()
+        
+        # Create generator
+        generator = default_factory.create_generator("enso",
+                                                   width=parameters.width,
+                                                   height=parameters.height,
+                                                   seed=parameters.seed)
+        
+        # Generate with advanced parameters
+        img = generator.generate(parameters=parameters)
+        
+        print(f"✨ Generated advanced enso with style={parameters.style_preset}")
+        return serve_pil_image(img)
+        
+    except Exception as e:
+        print(f"❌ Advanced Enso Generation Error: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to generate advanced enso: {str(e)}")
+
+
+@app.post("/generate/advanced/sigil")
+@limiter.limit("10/minute")
+async def generate_advanced_sigil(request: Request, generation_request: GenerationRequest):
+    """
+    Generate sigil with advanced parameters.
+    
+    Provides fine-grained control over geometric precision and mystical effects.
+    """
+    try:
+        if generation_request.asset_type != "sigil":
+            raise HTTPException(status_code=400, detail="Invalid asset type for this endpoint")
+        
+        # Get final parameters
+        parameters = generation_request.get_final_parameters()
+        
+        # Create generator
+        generator = default_factory.create_generator("sigil",
+                                                   width=parameters.width,
+                                                   height=parameters.height,
+                                                   seed=parameters.seed)
+        
+        # Generate with advanced parameters
+        img = generator.generate(parameters=parameters)
+        
+        print(f"✨ Generated advanced sigil with complexity={parameters.complexity}")
+        return serve_pil_image(img)
+        
+    except Exception as e:
+        print(f"❌ Advanced Sigil Generation Error: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to generate advanced sigil: {str(e)}")
+
+
+@app.post("/generate/advanced/{asset_type}")
+@limiter.limit("10/minute")
+async def generate_advanced_asset(request: Request, asset_type: str, generation_request: GenerationRequest):
+    """
+    Generate any asset with advanced parameters.
+    
+    Universal endpoint for advanced generation with full parameter support.
+    """
+    try:
+        if generation_request.asset_type != asset_type:
+            raise HTTPException(status_code=400, detail="Asset type mismatch between URL and request body")
+        
+        # Validate asset type
+        available_generators = list_generators()
+        if asset_type not in available_generators:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Unknown generator type '{asset_type}'. Available: {available_generators}"
+            )
+        
+        # Get final parameters
+        parameters = generation_request.get_final_parameters()
+        
+        # Create generator
+        generator = default_factory.create_generator(asset_type,
+                                                   width=parameters.width,
+                                                   height=parameters.height,
+                                                   seed=parameters.seed)
+        
+        # Generate with advanced parameters
+        img = generator.generate(parameters=parameters)
+        
+        print(f"✨ Generated advanced {asset_type} with preset={parameters.style_preset}")
+        return serve_pil_image(img)
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"❌ Advanced {asset_type} Generation Error: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to generate advanced {asset_type}: {str(e)}")
+
+
+@app.post("/generate/preset/{preset_name}")
+@limiter.limit("20/minute")
+async def generate_with_preset(request: Request, preset_name: str,
+                              asset_type: str, overrides: dict = None):
+    """
+    Generate asset using a predefined preset.
+    
+    Args:
+        preset_name: Name of the preset to apply
+        asset_type: Type of asset to generate
+        overrides: Optional parameter overrides
+    """
+    try:
+        # Validate asset type
+        available_generators = list_generators()
+        if asset_type not in available_generators:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Unknown generator type '{asset_type}'. Available: {available_generators}"
+            )
+        
+        # Get preset manager
+        preset_manager = get_preset_manager()
+        
+        # Start with default parameters
+        parameters = GenerationParameters()
+        
+        # Apply preset
+        parameters = preset_manager.apply_preset(parameters, preset_name, overrides)
+        
+        # Create generator
+        generator = default_factory.create_generator(asset_type,
+                                                   width=parameters.width,
+                                                   height=parameters.height,
+                                                   seed=parameters.seed)
+        
+        # Generate with preset
+        img = generator.generate(parameters=parameters)
+        
+        print(f"✨ Generated {asset_type} with preset '{preset_name}'")
+        return serve_pil_image(img)
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"❌ Preset Generation Error for {preset_name}: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to generate with preset '{preset_name}': {str(e)}")
+
+
+@app.get("/presets")
+async def get_available_presets():
+    """
+    Get all available presets organized by category.
+    
+    Returns:
+        Dictionary with preset categories and names
+    """
+    try:
+        preset_manager = get_preset_manager()
+        categories = preset_manager.get_presets_by_category()
+        
+        # Get detailed info for each preset
+        preset_info = {}
+        for category, presets in categories.items():
+            preset_info[category] = []
+            for preset_name in presets:
+                try:
+                    info = preset_manager.get_preset_info(preset_name)
+                    preset_info[category].append(info)
+                except Exception as e:
+                    preset_info[category].append({
+                        "name": preset_name,
+                        "error": str(e)
+                    })
+        
+        return {
+            "status": "success",
+            "presets": preset_info,
+            "total_presets": sum(len(presets) for presets in categories.values()),
+            "timestamp": datetime.utcnow().isoformat() + "Z"
+        }
+        
+    except Exception as e:
+        print(f"❌ Preset List Error: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to get presets: {str(e)}")
+
+
+@app.post("/validate/parameters")
+async def validate_parameters(request_data: dict):
+    """
+    Validate generation parameters before use.
+    
+    Returns validation results and suggestions.
+    """
+    try:
+        # Parse parameters
+        parameters = GenerationParameters(**request_data)
+        
+        # Create dummy generator for validation
+        generator = default_factory.create_generator("parchment",
+                                                   width=parameters.width,
+                                                   height=parameters.height)
+        
+        # Validate parameters
+        validation_result = generator.validate_parameters(parameters)
+        
+        return {
+            "status": "success",
+            "is_valid": validation_result.is_valid,
+            "errors": validation_result.errors,
+            "warnings": validation_result.warnings,
+            "suggestions": validation_result.suggestions,
+            "effective_dimensions": parameters.get_effective_dimensions(),
+            "quality_settings": parameters.get_quality_settings(),
+            "style_settings": parameters.get_style_settings(),
+            "timestamp": datetime.utcnow().isoformat() + "Z"
+        }
+        
+    except Exception as e:
+        print(f"❌ Parameter Validation Error: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to validate parameters: {str(e)}")
+
+
+@app.get("/color-palettes")
+async def get_color_palettes():
+    """
+    Get available color palettes and utilities.
+    
+    Returns:
+        Available color palettes and generation utilities
+    """
+    try:
+        palette_manager = ColorPaletteManager()
+        palette_manager.generate_preset_palettes()
+        
+        return {
+            "status": "success",
+            "presets": palette_manager.list_saved_palettes(),
+            "utilities": {
+                "complementary": "Generate complementary color palettes",
+                "analogous": "Generate analogous color palettes",
+                "monochromatic": "Generate monochromatic palettes",
+                "triadic": "Generate triadic color schemes"
+            },
+            "timestamp": datetime.utcnow().isoformat() + "Z"
+        }
+        
+    except Exception as e:
+        print(f"❌ Color Palette Error: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to get color palettes: {str(e)}")
 
 
 if __name__ == "__main__":

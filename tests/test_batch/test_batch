@@ -1,0 +1,44 @@
+"""
+Unit tests for batch job system.
+
+Tests job creation, management, progress tracking,
+cancellation, and concurrent processing.
+"""
+
+import pytest
+import time
+from unittest.mock import Mock
+
+from utils.batch_job import get_job_manager, BatchRequest, GenerationRequest
+
+
+class TestBatchJob:
+    """Test batch job functionality."""
+    
+    def test_create_batch_request(self):
+        """Test creating a batch request."""
+        requests = [
+            GenerationRequest(type="sigil", count=2, parameters={}),
+            GenerationRequest(type="enso", count=1, parameters={})
+        ]
+        
+        batch_request = BatchRequest(requests=requests)
+        
+        assert len(batch_request.requests) == 2
+        assert batch_request.requests[0].type == "sigil"
+        assert batch_request.requests[0].count == 2
+        assert batch_request.requests[1].type == "enso"
+        assert batch_request.requests[1].count == 1
+    
+    def test_job_creation(self, job_manager):
+        """Test creating a new job."""
+        requests = [
+            GenerationRequest(type="sigil", count=1, parameters={})
+        ]
+        
+        batch_request = BatchRequest(requests=requests)
+        job = job_manager.create_job(batch_request)
+        
+        assert job is not None
+        assert job.status == "pending"
+        assert job.total_items == 1

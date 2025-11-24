@@ -1,0 +1,55 @@
+"""
+Unit tests for GeneratorFactory and GeneratorRegistry classes.
+
+Tests the factory pattern implementation, generator registration,
+and creation functionality.
+"""
+
+import pytest
+from unittest.mock import Mock
+
+from generators.factory import GeneratorFactory
+from generators.registry import GeneratorRegistry
+from generators.base_generator import BaseGenerator
+from generators.sigil_generator import SigilGenerator
+from generators.enso_generator import EnsoGenerator
+
+
+class TestGeneratorRegistry:
+    """Test suite for GeneratorRegistry functionality."""
+    
+    def test_init(self):
+        """Test registry initialization."""
+        registry = GeneratorRegistry()
+        assert isinstance(registry._generators, dict)
+        assert len(registry._generators) == 0
+    
+    def test_register_valid_generator(self):
+        """Test registering a valid generator class."""
+        registry = GeneratorRegistry()
+        success = registry.register("test_gen", SigilGenerator)
+        
+        assert success is True
+        assert "test_gen" in registry._generators
+        assert registry._generators["test_gen"] == SigilGenerator
+
+
+class TestGeneratorFactory:
+    """Test suite for GeneratorFactory functionality."""
+    
+    def test_create_generator_success(self):
+        """Test successful generator creation."""
+        factory = GeneratorFactory()
+        generator = factory.create_generator("sigil", width=256, height=256)
+        
+        assert isinstance(generator, BaseGenerator)
+        assert generator.get_generator_type() == "sigil"
+        assert generator.width == 256
+        assert generator.height == 256
+    
+    def test_create_generator_invalid_type(self):
+        """Test creating generator with invalid type."""
+        factory = GeneratorFactory()
+        
+        with pytest.raises(ValueError):
+            factory.create_generator("nonexistent_generator")

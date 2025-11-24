@@ -14,24 +14,74 @@ from typing import Any, Optional, Dict, Tuple
 from datetime import datetime
 
 
+class PerformanceMetrics:
+    """Performance tracking for cache operations."""
+    
+    def __init__(self):
+        self.operation_times = []
+        self.cache_hit_times = []
+        self.cache_miss_times = []
+        self.memory_usage = []
+        self._lock = threading.Lock()
+    
+    def record_operation(self, duration: float, is_hit: bool, memory_mb: float = 0.0):
+        """Record performance metrics."""
+        with self._lock:
+            self.operation_times.append(duration)
+            if is_hit:
+                self.cache_hit_times.append(duration)
+            else:
+                self.cache_miss_times.append(duration)
+            
+            if memory_mb > 0:
+                self.memory_usage.append(memory_mb)
+            
+            # Keep only last 1000 measurements
+            for times_list in [self.operation_times, self.cache_hit_times,
+                             self.cache_miss_times, self.memory_usage]:
+                if len(times_list) > 1000:
+                    times_list[:] = times_list[-1000:]
+    
+    def get_metrics(self) -> dict:
+        """Get current performance metrics."""
+        with self._lock:
+            total_ops = len(self.operation_times)
+            if total_ops == 0:
+                return {"no_data": True}
+            
+            return {
+                "total_operations": total_ops,
+                "avg_operation_time": sum(self.operation_times) / total_ops,
+                "min_operation_time": min(self.operation_times),
+                "max_operation_time": max(self.operation_times),
+                "avg_cache_hit_time": (sum(self.cache_hit_times) / len(self.cache_hit_times)) if self.cache_hit_times else 0,
+                "avg_cache_miss_time": (sum(self.cache_miss_times) / len(self.cache_miss_times)) if self.cache_miss_times else 0,
+                "hit_ratio": len(self.cache_hit_times) / total_ops,
+                "total_memory_mb": sum(self.memory_usage),
+                "avg_memory_mb": (sum(self.memory_usage) / len(self.memory_usage)) if self.memory_usage else 0
+            }
+
+
 class LRUCache:
     """
-    Thread-safe LRU cache with TTL support.
+    Thread-safe LRU cache with TTL support and performance monitoring.
     
     Implements Least Recently Used eviction policy with optional
-    Time To Live for cached items.
+    Time To Live for cached items and performance tracking.
     """
     
-    def __init__(self, max_size: int = 100, default_ttl: int = 3600):
+    def __init__(self, max_size: int = 100, default_ttl: int = 3600, monitoring: bool = True):
         """
         Initialize LRU cache.
         
         Args:
             max_size: Maximum number of items to store in cache
             default_ttl: Default time-to-live in seconds for cached items
+            monitoring: Enable performance monitoring
         """
         self.max_size = max_size
         self.default_ttl = default_ttl
+        self.monitoring = monitoring
         self._cache: OrderedDict[str, Tuple[Any, float, float]] = OrderedDict()
         self._lock = threading.RLock()
         self._stats = {
@@ -41,6 +91,7 @@ class LRUCache:
             'expired': 0,
             'total_set': 0
         }
+        self._performance = PerformanceMetrics() if monitoring else None
     
     def _generate_key(self, *args, **kwargs) -> str:
         """
@@ -63,7 +114,7 @@ class LRUCache:
     
     def get(self, key: str) -> Optional[Any]:
         """
-        Retrieve an item from cache.
+        Retrieve an item from cache with performance tracking.
         
         Args:
             key: Cache key to retrieve
@@ -71,8 +122,13 @@ class LRUCache:
         Returns:
             Cached value if found and not expired, None otherwise
         """
+        start_time = time.perf_counter()
+        
         with self._lock:
             if key not in self._cache:
+                if self.monitoring:
+                    duration = time.perf_counter() - start_time
+                    self._performance.record_operation(duration, is_hit=False)
                 self._stats['misses'] += 1
                 return None
             
@@ -83,25 +139,44 @@ class LRUCache:
                 del self._cache[key]
                 self._stats['expired'] += 1
                 self._stats['misses'] += 1
+                
+                if self.monitoring:
+                    duration = time.perf_counter() - start_time
+                    self._performance.record_operation(duration, is_hit=False)
                 return None
             
             # Move to end (most recently used)
             self._cache.move_to_end(key)
             self._stats['hits'] += 1
+            
+            if self.monitoring:
+                duration = time.perf_counter() - start_time
+                self._performance.record_operation(duration, is_hit=True)
+            
             return value
     
     def set(self, key: str, value: Any, ttl: Optional[int] = None) -> None:
         """
-        Store an item in cache.
+        Store an item in cache with memory tracking.
         
         Args:
             key: Cache key
             value: Value to cache
             ttl: Time to live in seconds (uses default if None)
         """
+        start_time = time.perf_counter()
+        
         with self._lock:
             ttl = ttl or self.default_ttl
             timestamp = time.time()
+            
+            # Estimate memory usage (simplified)
+            memory_mb = 0
+            try:
+                import sys
+                memory_mb = sys.getsizeof(value) / 1024 / 1024
+            except:
+                pass
             
             # Remove if exists (will be re-added at end)
             if key in self._cache:
@@ -115,6 +190,10 @@ class LRUCache:
             # Store with timestamp and TTL
             self._cache[key] = (value, timestamp, ttl)
             self._stats['total_set'] += 1
+            
+            if self.monitoring:
+                duration = time.perf_counter() - start_time
+                self._performance.record_operation(duration, is_hit=True, memory_mb=memory_mb)
     
     def clear(self) -> None:
         """Clear all items from cache."""
@@ -123,10 +202,10 @@ class LRUCache:
     
     def get_stats(self) -> Dict[str, Any]:
         """
-        Get cache statistics.
+        Get cache statistics including performance metrics.
         
         Returns:
-            Dictionary containing cache statistics
+            Dictionary containing cache statistics and performance data
         """
         with self._lock:
             stats = self._stats.copy()
@@ -139,6 +218,10 @@ class LRUCache:
                     if (stats['hits'] + stats['misses']) > 0 else 0.0
                 )
             })
+            
+            if self.monitoring and self._performance:
+                stats['performance'] = self._performance.get_metrics()
+            
             return stats
     
     def get_info(self) -> Dict[str, Any]:

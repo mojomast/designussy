@@ -1,0 +1,126 @@
+================================================================================
+NANOBANANA GENERATORS - PERFORMANCE PROFILING REPORT
+================================================================================
+Generated: 2025-11-24 15:39:36
+System: 24 cores, 63.7GB RAM
+
+PERFORMANCE SUMMARY
+----------------------------------------
+Total tests: 15
+Average generation time: 20.70ms
+Average memory usage: 1.78MB
+Target < 200ms: PASS
+
+DETAILED RESULTS
+----------------------------------------
+Generator: giraffe
+  Size: 256x256
+  Time: 1.87ms avg (1.71ms - 2.05ms)
+  Memory: 0.01MB
+  CPU: 0.0%
+  Target < 500.0ms: PASS
+
+Generator: kangaroo
+  Size: 256x256
+  Time: 2.05ms avg (1.86ms - 2.43ms)
+  Memory: 0.01MB
+  CPU: 0.0%
+  Target < 500.0ms: PASS
+
+Generator: sigil
+  Size: 256x256
+  Time: 2.93ms avg (2.73ms - 3.26ms)
+  Memory: 0.70MB
+  CPU: 0.0%
+  Target < 200.0ms: PASS
+
+Generator: kangaroo
+  Size: 512x512
+  Time: 5.44ms avg (5.19ms - 5.68ms)
+  Memory: 0.01MB
+  CPU: 5.6%
+  Target < 500.0ms: PASS
+
+Generator: giraffe
+  Size: 512x512
+  Time: 5.60ms avg (5.36ms - 5.91ms)
+  Memory: 0.01MB
+  CPU: 8.3%
+  Target < 500.0ms: PASS
+
+Generator: sigil
+  Size: 512x512
+  Time: 7.91ms avg (7.77ms - 8.13ms)
+  Memory: 2.76MB
+  CPU: 0.0%
+  Target < 200.0ms: PASS
+
+Generator: parchment
+  Size: 256x256
+  Time: 11.05ms avg (6.16ms - 20.71ms)
+  Memory: 0.81MB
+  CPU: 0.0%
+  Target < 200.0ms: PASS
+
+Generator: giraffe
+  Size: 1024x1024
+  Time: 19.41ms avg (19.08ms - 19.69ms)
+  Memory: 0.01MB
+  CPU: 5.6%
+  Target < 500.0ms: PASS
+
+Generator: parchment
+  Size: 512x512
+  Time: 20.96ms avg (20.51ms - 21.44ms)
+  Memory: 2.26MB
+  CPU: 2.6%
+  Target < 200.0ms: PASS
+
+Generator: enso
+  Size: 256x256
+  Time: 23.49ms avg (22.67ms - 24.11ms)
+  Memory: 0.02MB
+  CPU: 3.9%
+  Target < 200.0ms: PASS
+
+Generator: kangaroo
+  Size: 1024x1024
+  Time: 23.63ms avg (21.24ms - 27.31ms)
+  Memory: 0.01MB
+  CPU: 14.7%
+  Target < 500.0ms: PASS
+
+Generator: enso
+  Size: 512x512
+  Time: 28.79ms avg (27.81ms - 29.83ms)
+  Memory: 0.02MB
+  CPU: 4.1%
+  Target < 200.0ms: PASS
+
+Generator: sigil
+  Size: 1024x1024
+  Time: 29.21ms avg (27.47ms - 30.91ms)
+  Memory: 11.01MB
+  CPU: 5.4%
+  Target < 200.0ms: PASS
+
+Generator: enso
+  Size: 1024x1024
+  Time: 43.84ms avg (42.22ms - 45.89ms)
+  Memory: 0.02MB
+  CPU: 1.5%
+  Target < 200.0ms: PASS
+
+Generator: parchment
+  Size: 1024x1024
+  Time: 84.34ms avg (72.53ms - 96.92ms)
+  Memory: 9.01MB
+  CPU: 4.2%
+  Target < 200.0ms: PASS
+
+BOTTLENECK ANALYSIS
+----------------------------------------
+OPTIMIZATION RECOMMENDATIONS
+----------------------------------------
+
+Recommendations based on bottlenecks detected.
