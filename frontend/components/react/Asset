@@ -1,0 +1,582 @@
+/**
+ * @fileoverview AssetGallery React Component
+ * @description Component for browsing and searching generated assets
+ * @version 1.0.0
+ */
+
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import PropTypes from 'prop-types';
+import { AssetFormatters } from '../utils/formatters.js';
+
+/**
+ * Component for browsing and searching generated assets
+ * @param {Object} props - Component props
+ * @param {Array} props.assets - Array of asset objects
+ * @param {Function} props.onAssetSelect - Callback when asset is selected
+ * @param {Function} props.onAssetDelete - Callback when asset is deleted
+ * @param {Function} props.onAssetDownload - Callback when asset is downloaded
+ * @param {string} props.theme - Theme to apply
+ * @param {string} props.searchQuery - Current search query
+ * @param {Array} props.selectedAssets - Currently selected assets
+ * @param {Object} props.filterOptions - Current filter options
+ * @param {Function} props.onFilterChange - Filter change callback
+ * @returns {JSX.Element} AssetGallery component
+ */
+const AssetGallery = ({
+  assets = [],
+  onAssetSelect = () => {},
+  onAssetDelete = () => {},
+  onAssetDownload = () => {},
+  theme = 'default',
+  searchQuery = '',
+  selectedAssets = [],
+  filterOptions = {},
+  onFilterChange = () => {},
+  className = '',
+  ...props
+}) => {
+  // State management
+  const [viewMode, setViewMode] = useState('grid'); // grid, list, detail
+  const [sortBy, setSortBy] = useState('createdAt');
+  const [sortOrder, setSortOrder] = useState('desc');
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(24);
+  const [showFilters, setShowFilters] = useState(false);
+  const [localSearchQuery, setLocalSearchQuery] = useState(searchQuery);
+
+  // Debounced search
+  useEffect(() => {
+    const timeoutId = setTimeout(() => {
+      if (localSearchQuery !== searchQuery) {
+        onFilterChange({ ...filterOptions, search: localSearchQuery });
+      }
+    }, 300);
+
+    return () => clearTimeout(timeoutId);
+  }, [localSearchQuery, searchQuery, filterOptions, onFilterChange]);
+
+  // Reset page when filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery, filterOptions, sortBy, sortOrder]);
+
+  /**
+   * Filter and sort assets
+   */
+  const filteredAndSortedAssets = useMemo(() => {
+    let filtered = [...assets];
+
+    // Apply search filter
+    if (searchQuery) {
+      const query = searchQuery.toLowerCase();
+      filtered = filtered.filter(asset =>
+        asset.metadata?.type?.toLowerCase().includes(query) ||
+        asset.metadata?.prompt?.toLowerCase().includes(query) ||
+        asset.tags?.some(tag => tag.toLowerCase().includes(query)) ||
+        asset.id?.toLowerCase().includes(query)
+      );
+    }
+
+    // Apply type filter
+    if (filterOptions.assetType && filterOptions.assetType !== 'all') {
+      filtered = filtered.filter(asset => asset.type === filterOptions.assetType);
+    }
+
+    // Apply size filter
+    if (filterOptions.sizeRange) {
+      const { min, max } = filterOptions.sizeRange;
+      filtered = filtered.filter(asset => {
+        const size = asset.size || 0;
+        return size >= min && size <= max;
+      });
+    }
+
+    // Apply date filter
+    if (filterOptions.dateRange) {
+      const { start, end } = filterOptions.dateRange;
+      filtered = filtered.filter(asset => {
+        const date = new Date(asset.createdAt || asset.metadata?.generatedAt);
+        return (!start || date >= start) && (!end || date <= end);
+      });
+    }
+
+    // Apply sorting
+    filtered.sort((a, b) => {
+      let aValue, bValue;
+      
+      switch (sortBy) {
+        case 'type':
+          aValue = a.metadata?.type || a.type || '';
+          bValue = b.metadata?.type || b.type || '';
+          break;
+        case 'size':
+          aValue = a.size || 0;
+          bValue = b.size || 0;
+          break;
+        case 'createdAt':
+          aValue = new Date(a.createdAt || a.metadata?.generatedAt || 0);
+          bValue = new Date(b.createdAt || b.metadata?.generatedAt || 0);
+          break;
+        default:
+          aValue = a[sortBy] || '';
+          bValue = b[sortBy] || '';
+      }
+
+      if (sortOrder === 'desc') {
+        return aValue > bValue ? -1 : aValue < bValue ? 1 : 0;
+      } else {
+        return aValue < bValue ? -1 : aValue > bValue ? 1 : 0;
+      }
+    });
+
+    return filtered;
+  }, [assets, searchQuery, filterOptions, sortBy, sortOrder]);
+
+  /**
+   * Pagination
+   */
+  const paginatedAssets = useMemo(() => {
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    return filteredAndSortedAssets.slice(startIndex, startIndex + itemsPerPage);
+  }, [filteredAndSortedAssets, currentPage, itemsPerPage]);
+
+  const totalPages = Math.ceil(filteredAndSortedAssets.length / itemsPerPage);
+
+  /**
+   * Handle asset selection
+   */
+  const handleAssetSelect = useCallback((asset, event) => {
+    if (event.ctrlKey || event.metaKey) {
+      // Multi-select
+      const isSelected = selectedAssets.includes(asset.id);
+      const newSelection = isSelected
+        ? selectedAssets.filter(id => id !== asset.id)
+        : [...selectedAssets, asset.id];
+      onAssetSelect(asset, newSelection);
+    } else {
+      // Single select
+      onAssetSelect(asset, [asset.id]);
+    }
+  }, [selectedAssets, onAssetSelect]);
+
+  /**
+   * Handle sort change
+   */
+  const handleSortChange = useCallback((newSortBy) => {
+    if (sortBy === newSortBy) {
+      setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortBy(newSortBy);
+      setSortOrder('desc');
+    }
+  }, [sortBy, sortOrder]);
+
+  /**
+   * Handle page change
+   */
+  const handlePageChange = useCallback((page) => {
+    setCurrentPage(Math.max(1, Math.min(page, totalPages)));
+  }, [totalPages]);
+
+  /**
+   * Handle filter change
+   */
+  const handleFilterChange = useCallback((key, value) => {
+    onFilterChange({ ...filterOptions, [key]: value });
+  }, [filterOptions, onFilterChange]);
+
+  /**
+   * Get unique asset types for filter
+   */
+  const assetTypes = useMemo(() => {
+    const types = [...new Set(assets.map(asset => asset.metadata?.type || asset.type).filter(Boolean))];
+    return types.sort();
+  }, [assets]);
+
+  /**
+   * Render asset card
+   */
+  const renderAssetCard = (asset) => {
+    const isSelected = selectedAssets.includes(asset.id);
+    const isCurrentSelection = selectedAssets.length === 1 && selectedAssets[0] === asset.id;
+
+    return (
+      <div
+        key={asset.id}
+        className={`uw-gallery-card ${isSelected ? 'selected' : ''} ${isCurrentSelection ? 'current' : ''}`}
+        onClick={(e) => handleAssetSelect(asset, e)}
+        role="button"
+        tabIndex={0}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            handleAssetSelect(asset, e);
+          }
+        }}
+        aria-selected={isSelected}
+        aria-label={`Asset ${asset.id}, ${AssetFormatters.formatAssetType(asset.type || asset.metadata?.type)}`}
+      >
+        <div className="uw-card-image-container">
+          <img
+            src={asset.url}
+            alt={`${AssetFormatters.formatAssetType(asset.type || asset.metadata?.type)} - ${asset.metadata?.dimensions || ''}`}
+            className="uw-card-image"
+            loading="lazy"
+          />
+          <div className="uw-card-overlay">
+            <div className="uw-card-actions">
+              <button
+                type="button"
+                className="uw-card-action"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onAssetDownload(asset);
+                }}
+                aria-label="Download asset"
+                title="Download"
+              >
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                  <polyline points="7,10 12,15 17,10" />
+                  <line x1="12" y1="15" x2="12" y2="3" />
+                </svg>
+              </button>
+              <button
+                type="button"
+                className="uw-card-action"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  if (window.confirm('Are you sure you want to delete this asset?')) {
+                    onAssetDelete(asset);
+                  }
+                }}
+                aria-label="Delete asset"
+                title="Delete"
+              >
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <polyline points="3,6 5,6 21,6" />
+                  <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+                </svg>
+              </button>
+            </div>
+          </div>
+          {isSelected && (
+            <div className="uw-selection-indicator">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+            </div>
+          )}
+        </div>
+        
+        <div className="uw-card-content">
+          <div className="uw-card-title">
+            {AssetFormatters.formatAssetType(asset.type || asset.metadata?.type)}
+          </div>
+          <div className="uw-card-meta">
+            <span className="uw-card-dimensions">
+              {asset.metadata?.dimensions || `${asset.metadata?.width} × ${asset.metadata?.height}`}
+            </span>
+            <span className="uw-card-size">
+              {AssetFormatters.formatFileSize(asset.size)}
+            </span>
+          </div>
+          <div className="uw-card-date">
+            {AssetFormatters.formatRelativeTime(asset.createdAt || asset.metadata?.generatedAt)}
+          </div>
+          {asset.tags && asset.tags.length > 0 && (
+            <div className="uw-card-tags">
+              {asset.tags.slice(0, 3).map((tag, index) => (
+                <span key={index} className="uw-card-tag">{tag}</span>
+              ))}
+              {asset.tags.length > 3 && (
+                <span className="uw-card-tag-more">+{asset.tags.length - 3}</span>
+              )}
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  };
+
+  /**
+   * Render view mode toggle
+   */
+  const renderViewModeToggle = () => (
+    <div className="uw-view-mode-toggle" role="group" aria-label="View mode">
+      <button
+        type="button"
+        className={`uw-view-btn ${viewMode === 'grid' ? 'active' : ''}`}
+        onClick={() => setViewMode('grid')}
+        aria-pressed={viewMode === 'grid'}
+        aria-label="Grid view"
+      >
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+          <rect x="3" y="3" width="7" height="7" />
+          <rect x="14" y="3" width="7" height="7" />
+          <rect x="14" y="14" width="7" height="7" />
+          <rect x="3" y="14" width="7" height="7" />
+        </svg>
+      </button>
+      <button
+        type="button"
+        className={`uw-view-btn ${viewMode === 'list' ? 'active' : ''}`}
+        onClick={() => setViewMode('list')}
+        aria-pressed={viewMode === 'list'}
+        aria-label="List view"
+      >
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+          <line x1="8" y1="6" x2="21" y2="6" />
+          <line x1="8" y1="12" x2="21" y2="12" />
+          <line x1="8" y1="18" x2="21" y2="18" />
+          <line x1="3" y1="6" x2="3.01" y2="6" />
+          <line x1="3" y1="12" x2="3.01" y2="12" />
+          <line x1="3" y1="18" x2="3.01" y2="18" />
+        </svg>
+      </button>
+    </div>
+  );
+
+  /**
+   * Render sort controls
+   */
+  const renderSortControls = () => (
+    <div className="uw-sort-controls">
+      <label htmlFor="sort-by" className="uw-sort-label">Sort by:</label>
+      <select
+        id="sort-by"
+        value={sortBy}
+        onChange={(e) => handleSortChange(e.target.value)}
+        className="uw-sort-select"
+      >
+        <option value="createdAt">Date Created</option>
+        <option value="type">Asset Type</option>
+        <option value="size">File Size</option>
+      </select>
+      <button
+        type="button"
+        className="uw-sort-order-btn"
+        onClick={() => setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')}
+        aria-label={`Sort ${sortOrder === 'asc' ? 'descending' : 'ascending'}`}
+        title={`Sort ${sortOrder === 'asc' ? 'descending' : 'ascending'}`}
+      >
+        <svg
+          width="16"
+          height="16"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+          style={{
+            transform: sortOrder === 'desc' ? 'rotate(180deg)' : 'rotate(0deg)',
+            transition: 'transform 0.2s ease'
+          }}
+        >
+          <polyline points="6,9 12,15 18,9" />
+        </svg>
+      </button>
+    </div>
+  );
+
+  /**
+   * Render filter panel
+   */
+  const renderFilterPanel = () => (
+    <div className="uw-filter-panel">
+      <div className="uw-filter-group">
+        <label htmlFor="filter-asset-type" className="uw-filter-label">Asset Type</label>
+        <select
+          id="filter-asset-type"
+          value={filterOptions.assetType || 'all'}
+          onChange={(e) => handleFilterChange('assetType', e.target.value)}
+          className="uw-filter-select"
+        >
+          <option value="all">All Types</option>
+          {assetTypes.map(type => (
+            <option key={type} value={type}>
+              {AssetFormatters.formatAssetType(type)}
+            </option>
+          ))}
+        </select>
+      </div>
+
+      <div className="uw-filter-group">
+        <label htmlFor="filter-items-per-page" className="uw-filter-label">Items per page</label>
+        <select
+          id="filter-items-per-page"
+          value={itemsPerPage}
+          onChange={(e) => setItemsPerPage(parseInt(e.target.value))}
+          className="uw-filter-select"
+        >
+          <option value={12}>12</option>
+          <option value={24}>24</option>
+          <option value={48}>48</option>
+          <option value={96}>96</option>
+        </select>
+      </div>
+    </div>
+  );
+
+  return (
+    <div className={`uw-asset-gallery ${theme} ${className}`} {...props}>
+      {/* Gallery Header */}
+      <div className="uw-gallery-header">
+        <div className="uw-gallery-title-section">
+          <h2 className="uw-gallery-title">Asset Gallery</h2>
+          <div className="uw-gallery-stats">
+            {filteredAndSortedAssets.length} of {assets.length} assets
+          </div>
+        </div>
+
+        <div className="uw-gallery-controls">
+          {/* Search */}
+          <div className="uw-search-container">
+            <input
+              type="text"
+              placeholder="Search assets..."
+              value={localSearchQuery}
+              onChange={(e) => setLocalSearchQuery(e.target.value)}
+              className="uw-search-input"
+              aria-label="Search assets"
+            />
+            <svg className="uw-search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <circle cx="11" cy="11" r="8" />
+              <path d="21 21l-4.35-4.35" />
+            </svg>
+          </div>
+
+          {/* View Mode Toggle */}
+          {renderViewModeToggle()}
+
+          {/* Sort Controls */}
+          {renderSortControls()}
+
+          {/* Filter Toggle */}
+          <button
+            type="button"
+            className={`uw-filter-toggle ${showFilters ? 'active' : ''}`}
+            onClick={() => setShowFilters(!showFilters)}
+            aria-expanded={showFilters}
+            aria-controls="uw-filter-panel"
+            aria-label="Toggle filters"
+          >
+            Filters
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <polygon points="22,3 2,3 10,12.46 10,19 14,21 14,12.46" />
+            </svg>
+          </button>
+        </div>
+      </div>
+
+      {/* Filter Panel */}
+      {showFilters && (
+        <div id="uw-filter-panel" className="uw-filter-section">
+          {renderFilterPanel()}
+        </div>
+      )}
+
+      {/* Selection Summary */}
+      {selectedAssets.length > 0 && (
+        <div className="uw-selection-summary" role="status" aria-live="polite">
+          <span>{selectedAssets.length} asset{selectedAssets.length !== 1 ? 's' : ''} selected</span>
+          <div className="uw-selection-actions">
+            <button
+              type="button"
+              className="uw-btn uw-btn-secondary"
+              onClick={() => onAssetSelect(null, [])}
+            >
+              Clear Selection
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Gallery Content */}
+      <div className={`uw-gallery-content uw-view-${viewMode}`}>
+        {paginatedAssets.length > 0 ? (
+          <>
+            <div className={`uw-assets-container ${viewMode === 'grid' ? 'uw-grid' : 'uw-list'}`}>
+              {paginatedAssets.map(renderAssetCard)}
+            </div>
+
+            {/* Pagination */}
+            {totalPages > 1 && (
+              <div className="uw-pagination">
+                <button
+                  type="button"
+                  className="uw-pagination-btn"
+                  onClick={() => handlePageChange(currentPage - 1)}
+                  disabled={currentPage === 1}
+                  aria-label="Previous page"
+                >
+                  Previous
+                </button>
+
+                <div className="uw-pagination-numbers">
+                  {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                    let pageNum;
+                    if (totalPages <= 5) {
+                      pageNum = i + 1;
+                    } else if (currentPage <= 3) {
+                      pageNum = i + 1;
+                    } else if (currentPage >= totalPages - 2) {
+                      pageNum = totalPages - 4 + i;
+                    } else {
+                      pageNum = currentPage - 2 + i;
+                    }
+
+                    return (
+                      <button
+                        key={pageNum}
+                        type="button"
+                        className={`uw-pagination-number ${currentPage === pageNum ? 'active' : ''}`}
+                        onClick={() => handlePageChange(pageNum)}
+                        aria-label={`Page ${pageNum}`}
+                        aria-current={currentPage === pageNum ? 'page' : undefined}
+                      >
+                        {pageNum}
+                      </button>
+                    );
+                  })}
+                </div>
+
+                <button
+                  type="button"
+                  className="uw-pagination-btn"
+                  onClick={() => handlePageChange(currentPage + 1)}
+                  disabled={currentPage === totalPages}
+                  aria-label="Next page"
+                >
+                  Next
+                </button>
+              </div>
+            )}
+          </>
+        ) : (
+          <div className="uw-empty-gallery">
+            <div className="uw-empty-icon">🎨</div>
+            <h3 className="uw-empty-title">No Assets Found</h3>
+            <p className="uw-empty-description">
+              {searchQuery ? 'Try adjusting your search or filters' : 'Generate some assets to see them here'}
+            </p>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
+// PropTypes definition
+AssetGallery.propTypes = {
+  assets: PropTypes.arrayOf(PropTypes.object),
+  onAssetSelect: PropTypes.func,
+  onAssetDelete: PropTypes.func,
+  onAssetDownload: PropTypes.func,
+  theme: PropTypes.oneOf(['default', 'dark', 'minimal', 'chaotic']),
+  searchQuery: PropTypes.string,
+  selectedAssets: PropTypes.arrayOf(PropTypes.string),
+  filterOptions: PropTypes.object,
+  onFilterChange: PropTypes.func,
+  className: PropTypes.string
+};
+
+export default AssetGallery;

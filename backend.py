@@ -35,6 +35,32 @@ from generators.schemas import GenerationParameters, GenerationRequest, PresetRe
 from generators.presets import get_preset_manager
 from generators.color_utils import ColorPaletteManager
 
+# Import metadata system components
+try:
+    from storage.metadata_schema import AssetMetadata, AssetFormat, AssetCategory, MetadataQuery
+    from storage.asset_storage import AssetStorage
+    from storage.versioning import AssetVersioner
+    from storage.search import AssetSearchEngine
+    from storage.tag_manager import TagManager
+    from storage.export_import import get_exporter, get_importer, create_full_backup
+    
+    # Initialize metadata system if enabled
+    METADATA_ENABLED = os.getenv('METADATA_ENABLED', 'true').lower() == 'true'
+    if METADATA_ENABLED:
+        storage = AssetStorage()
+        versioner = AssetVersioner(storage)
+        search_engine = AssetSearchEngine(storage)
+        tag_manager = TagManager(storage)
+        print("🔗 Metadata system initialized")
+    else:
+        storage = versioner = search_engine = tag_manager = None
+        print("📦 Metadata system disabled")
+        
+except ImportError as e:
+    print(f"⚠️ Metadata system not available: {e}")
+    storage = versioner = search_engine = tag_manager = None
+    METADATA_ENABLED = False
+
 # Load environment variables from .env
 from pathlib import Path
 env_path = Path(__file__).parent / '.env'
@@ -150,9 +176,23 @@ def health_check():
         "checks": {
             "cors_configured": True,
             "error_handling_enabled": True,
-            "validation_enabled": True
+            "validation_enabled": True,
+            "metadata_system": "enabled" if METADATA_ENABLED else "disabled"
         }
     }
+    
+    # Add metadata system health check
+    if METADATA_ENABLED and storage:
+        try:
+            stats = storage.get_stats()
+            health_status["services"]["metadata_storage"] = "operational"
+            health_status["metadata_stats"] = {
+                "total_assets": stats.total_assets,
+                "total_tags": stats.total_tags,
+                "database_size_mb": round(stats.database_size_bytes / (1024 * 1024), 2)
+            }
+        except Exception as e:
+            health_status["services"]["metadata_storage"] = f"error: {str(e)}"
     
     # Set start time if not already set
     if not hasattr(app, 'start_time'):
@@ -1067,6 +1107,648 @@ async def get_color_palettes():
     except Exception as e:
         print(f"❌ Color Palette Error: {e}")
         raise HTTPException(status_code=500, detail=f"Failed to get color palettes: {str(e)}")
+
+
+# ==================== Metadata Collection Functions ====================
+
+def collect_asset_metadata(img, generator_type: str, parameters: dict = None,
+                          user_metadata: dict = None) -> Optional[AssetMetadata]:
+    """
+    Collect metadata from a generated asset.
+    
+    Args:
+        img: Generated PIL image
+        generator_type: Type of generator used
+        parameters: Generation parameters
+        user_metadata: User-provided metadata (tags, title, etc.)
+        
+    Returns:
+        AssetMetadata object if metadata collection is enabled, None otherwise
+    """
+    if not METADATA_ENABLED or not storage:
+        return None
+    
+    try:
+        import hashlib
+        import io
+        
+        # Calculate file size and hash
+        img_buffer = io.BytesIO()
+        img.save(img_buffer, format="PNG")
+        img_buffer.seek(0)
+        size_bytes = len(img_buffer.getvalue())
+        
+        # Calculate SHA256 hash
+        img_buffer.seek(0)
+        content_hash = hashlib.sha256(img_buffer.read()).hexdigest()
+        
+        # Create metadata
+        metadata = AssetMetadata.create_new(
+            generator_type=generator_type,
+            width=img.width,
+            height=img.height,
+            format=AssetFormat.PNG,
+            size_bytes=size_bytes,
+            hash=content_hash,
+            parameters=parameters or {},
+            seed=parameters.get('seed') if parameters else None,
+            quality=parameters.get('quality') if parameters else None,
+            complexity=parameters.get('complexity') if parameters else None,
+            randomness=parameters.get('randomness') if parameters else None,
+            base_color=parameters.get('base_color') if parameters else None,
+            color_palette=parameters.get('color_palette') if parameters else None,
+            category=_get_category_for_generator(generator_type),
+            tags=user_metadata.get('tags', []) if user_metadata else [],
+            title=user_metadata.get('title') if user_metadata else None,
+            description=user_metadata.get('description') if user_metadata else None,
+            author=user_metadata.get('author') if user_metadata else None
+        )
+        
+        return metadata
+        
+    except Exception as e:
+        print(f"❌ Error collecting metadata: {e}")
+        return None
+
+
+def store_asset_metadata(metadata: AssetMetadata) -> bool:
+    """
+    Store asset metadata in the database.
+    
+    Args:
+        metadata: AssetMetadata to store
+        
+    Returns:
+        True if successful, False otherwise
+    """
+    if not METADATA_ENABLED or not storage:
+        return False
+    
+    try:
+        return storage.store_asset(metadata)
+    except Exception as e:
+        print(f"❌ Error storing metadata: {e}")
+        return False
+
+
+def _get_category_for_generator(generator_type: str) -> Optional[AssetCategory]:
+    """Map generator types to asset categories."""
+    category_mapping = {
+        'parchment': AssetCategory.BACKGROUND,
+        'enso': AssetCategory.GLYPH,
+        'sigil': AssetCategory.GLYPH,
+        'giraffe': AssetCategory.CREATURE,
+        'kangaroo': AssetCategory.CREATURE,
+        'divider': AssetCategory.UI,
+        'orb': AssetCategory.UI
+    }
+    return category_mapping.get(generator_type)
+
+
+# ==================== Metadata API Endpoints ====================
+
+@app.get("/assets")
+async def list_assets(
+    search: Optional[str] = Query(None, description="Full-text search query"),
+    tags: Optional[str] = Query(None, description="Comma-separated list of required tags"),
+    category: Optional[str] = Query(None, description="Asset category filter"),
+    generator_type: Optional[str] = Query(None, description="Generator type filter"),
+    author: Optional[str] = Query(None, description="Author filter"),
+    limit: int = Query(50, ge=1, le=100, description="Number of results to return"),
+    offset: int = Query(0, ge=0, description="Number of results to skip")
+):
+    """
+    List assets with search and filtering capabilities.
+    
+    Provides comprehensive asset discovery with text search, tag filtering,
+    and pagination support.
+    """
+    if not METADATA_ENABLED:
+        raise HTTPException(status_code=503, detail="Metadata system disabled")
+    
+    try:
+        # Parse tags
+        tag_list = [tag.strip() for tag in tags.split(",")] if tags else None
+        
+        # Create query
+        query = MetadataQuery(
+            text=search,
+            tags=tag_list,
+            category=AssetCategory(category) if category else None,
+            generator_type=generator_type,
+            author=author,
+            limit=limit,
+            offset=offset
+        )
+        
+        # Search assets
+        search_results, total_count, facets = search_engine.search(query)
+        
+        # Convert results to response format
+        assets_data = []
+        for result in search_results:
+            asset = result.asset
+            assets_data.append({
+                "asset_id": asset.asset_id,
+                "title": asset.title or f"{asset.generator_type}_{asset.asset_id[:8]}",
+                "generator_type": asset.generator_type,
+                "category": asset.category.value if asset.category else None,
+                "width": asset.width,
+                "height": asset.height,
+                "format": asset.format.value,
+                "size_bytes": asset.size_bytes,
+                "tags": asset.tags,
+                "author": asset.author,
+                "created_at": asset.created_at.isoformat() + "Z",
+                "access_count": asset.access_count,
+                "is_favorite": asset.is_favorite,
+                "relevance_score": result.relevance_score
+            })
+        
+        return {
+            "status": "success",
+            "assets": assets_data,
+            "total_count": total_count,
+            "limit": limit,
+            "offset": offset,
+            "facets": {name: {
+                "name": facet.name,
+                "values": facet.values,
+                "total_count": facet.total_count
+            } for name, facet in facets.items()},
+            "timestamp": datetime.utcnow().isoformat() + "Z"
+        }
+        
+    except Exception as e:
+        print(f"❌ Asset List Error: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to list assets: {str(e)}")
+
+
+@app.get("/assets/{asset_id}")
+async def get_asset_metadata(asset_id: str):
+    """
+    Get metadata for a specific asset.
+    
+    Returns comprehensive asset information including metadata,
+    version history, and related assets.
+    """
+    if not METADATA_ENABLED:
+        raise HTTPException(status_code=503, detail="Metadata system disabled")
+    
+    try:
+        # Get asset metadata
+        asset = storage.get_asset(asset_id)
+        if not asset:
+            raise HTTPException(status_code=404, detail="Asset not found")
+        
+        # Increment access count
+        storage.increment_access_count(asset_id)
+        
+        # Get version history
+        version_history = versioner.get_version_history(asset_id)
+        
+        # Get similar assets
+        similar_assets = search_engine.find_similar_assets(asset_id, limit=5)
+        
+        return {
+            "status": "success",
+            "asset": {
+                "asset_id": asset.asset_id,
+                "version": asset.version,
+                "generator_type": asset.generator_type,
+                "parameters": asset.parameters,
+                "width": asset.width,
+                "height": asset.height,
+                "format": asset.format.value,
+                "size_bytes": asset.size_bytes,
+                "hash": asset.hash,
+                "tags": asset.tags,
+                "category": asset.category.value if asset.category else None,
+                "description": asset.description,
+                "author": asset.author,
+                "title": asset.title,
+                "quality": asset.quality,
+                "complexity": asset.complexity,
+                "randomness": asset.randomness,
+                "base_color": asset.base_color,
+                "color_palette": asset.color_palette,
+                "created_at": asset.created_at.isoformat() + "Z",
+                "updated_at": asset.updated_at.isoformat() + "Z",
+                "access_count": asset.access_count,
+                "download_count": asset.download_count,
+                "is_favorite": asset.is_favorite,
+                "status": asset.status.value
+            },
+            "version_history": [
+                {
+                    "version": v.version,
+                    "created_at": v.created_at.isoformat() + "Z",
+                    "description": getattr(v, 'description', None)
+                }
+                for v in version_history
+            ],
+            "similar_assets": [
+                {
+                    "asset_id": sa.asset.asset_id,
+                    "title": sa.asset.title or f"{sa.asset.generator_type}_{sa.asset.asset_id[:8]}",
+                    "generator_type": sa.asset.generator_type,
+                    "relevance_score": sa.relevance_score
+                }
+                for sa in similar_assets
+            ],
+            "timestamp": datetime.utcnow().isoformat() + "Z"
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"❌ Asset Metadata Error: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to get asset metadata: {str(e)}")
+
+
+@app.get("/assets/{asset_id}/versions")
+async def get_asset_versions(asset_id: str):
+    """
+    Get version history for an asset.
+    
+    Returns complete version lineage with change tracking
+    and rollback capabilities.
+    """
+    if not METADATA_ENABLED:
+        raise HTTPException(status_code=503, detail="Metadata system disabled")
+    
+    try:
+        version_history = versioner.get_version_history(asset_id)
+        
+        if not version_history:
+            raise HTTPException(status_code=404, detail="No versions found for asset")
+        
+        # Get version statistics
+        stats = versioner.get_version_statistics(asset_id)
+        
+        versions_data = []
+        for i, version in enumerate(version_history):
+            version_info = {
+                "version": version.version,
+                "created_at": version.created_at.isoformat() + "Z",
+                "updated_at": version.updated_at.isoformat() + "Z",
+                "description": version.description,
+                "author": version.author,
+                "quality": version.quality,
+                "complexity": version.complexity,
+                "width": version.width,
+                "height": version.height,
+                "size_bytes": version.size_bytes,
+                "hash": version.hash,
+                "status": version.status.value,
+                "is_current": (i == 0)  # Most recent version
+            }
+            
+            # Add change information if not the first version
+            if i > 0:
+                diff = versioner.get_version_diff(asset_id, version_history[i-1].version, version.version)
+                if diff:
+                    version_info["changes"] = {
+                        "change_type": diff.change_type.value,
+                        "summary": diff.get_change_summary(),
+                        "significant_changes": diff.significant_changes
+                    }
+            
+            versions_data.append(version_info)
+        
+        return {
+            "status": "success",
+            "asset_id": asset_id,
+            "versions": versions_data,
+            "statistics": stats,
+            "timestamp": datetime.utcnow().isoformat() + "Z"
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"❌ Asset Versions Error: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to get asset versions: {str(e)}")
+
+
+@app.post("/assets/{asset_id}/tags")
+async def add_asset_tags(asset_id: str, tags: List[str]):
+    """
+    Add tags to an asset.
+    
+    Validates tags and updates the asset's metadata.
+    """
+    if not METADATA_ENABLED:
+        raise HTTPException(status_code=503, detail="Metadata system disabled")
+    
+    try:
+        # Validate tags
+        valid_tags, invalid_tags = tag_manager.validate_tags(tags)
+        
+        if invalid_tags:
+            return {
+                "status": "partial_success",
+                "message": f"Some tags were invalid: {invalid_tags}",
+                "valid_tags_added": len(valid_tags),
+                "invalid_tags": invalid_tags,
+                "timestamp": datetime.utcnow().isoformat() + "Z"
+            }
+        
+        # Get current asset
+        asset = storage.get_asset(asset_id)
+        if not asset:
+            raise HTTPException(status_code=404, detail="Asset not found")
+        
+        # Add new tags to existing ones
+        new_tags = list(set(asset.tags + valid_tags))
+        
+        # Update asset
+        success = storage.update_asset_metadata(asset_id, {"tags": new_tags})
+        
+        if success:
+            return {
+                "status": "success",
+                "asset_id": asset_id,
+                "tags_added": valid_tags,
+                "total_tags": len(new_tags),
+                "timestamp": datetime.utcnow().isoformat() + "Z"
+            }
+        else:
+            raise HTTPException(status_code=500, detail="Failed to update asset tags")
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"❌ Add Tags Error: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to add tags: {str(e)}")
+
+
+@app.put("/assets/{asset_id}/metadata")
+async def update_asset_metadata(asset_id: str, metadata: dict):
+    """
+    Update asset metadata.
+    
+    Allows updating title, description, author, tags, and other metadata fields.
+    """
+    if not METADATA_ENABLED:
+        raise HTTPException(status_code=503, detail="Metadata system disabled")
+    
+    try:
+        # Validate asset exists
+        asset = storage.get_asset(asset_id)
+        if not asset:
+            raise HTTPException(status_code=404, detail="Asset not found")
+        
+        # Update metadata
+        success = storage.update_asset_metadata(asset_id, metadata)
+        
+        if success:
+            return {
+                "status": "success",
+                "asset_id": asset_id,
+                "fields_updated": list(metadata.keys()),
+                "timestamp": datetime.utcnow().isoformat() + "Z"
+            }
+        else:
+            raise HTTPException(status_code=500, detail="Failed to update metadata")
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"❌ Update Metadata Error: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to update metadata: {str(e)}")
+
+
+@app.delete("/assets/{asset_id}")
+async def delete_asset(asset_id: str, permanent: bool = Query(False, description="Permanently delete instead of soft delete")):
+    """
+    Delete an asset.
+    
+    Performs soft delete by default, can be made permanent.
+    """
+    if not METADATA_ENABLED:
+        raise HTTPException(status_code=503, detail="Metadata system disabled")
+    
+    try:
+        success = storage.delete_asset(asset_id, permanent=permanent)
+        
+        if success:
+            return {
+                "status": "success",
+                "asset_id": asset_id,
+                "deleted_permanently": permanent,
+                "message": "Asset deleted successfully",
+                "timestamp": datetime.utcnow().isoformat() + "Z"
+            }
+        else:
+            raise HTTPException(status_code=404, detail="Asset not found")
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"❌ Delete Asset Error: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to delete asset: {str(e)}")
+
+
+@app.get("/tags")
+async def get_popular_tags(
+    limit: int = Query(50, ge=1, le=200, description="Number of tags to return"),
+    category: Optional[str] = Query(None, description="Filter by tag category")
+):
+    """
+    Get popular tags with filtering options.
+    
+    Returns most frequently used tags across all assets.
+    """
+    if not METADATA_ENABLED:
+        raise HTTPException(status_code=503, detail="Metadata system disabled")
+    
+    try:
+        # Parse category filter
+        from storage.tag_manager import TagCategory
+        category_filter = TagCategory(category) if category else None
+        
+        # Get popular tags
+        popular_tags = tag_manager.get_popular_tags(limit=limit, category=category_filter)
+        
+        tags_data = []
+        for tag_info in popular_tags:
+            tags_data.append({
+                "tag": tag_info.name,
+                "category": tag_info.category.value,
+                "usage_count": tag_info.usage_count,
+                "popularity_score": tag_info.popularity_score,
+                "synonyms": tag_info.synonyms,
+                "related_tags": tag_info.related_tags,
+                "description": tag_info.description
+            })
+        
+        return {
+            "status": "success",
+            "tags": tags_data,
+            "total_count": len(tags_data),
+            "category_filter": category,
+            "timestamp": datetime.utcnow().isoformat() + "Z"
+        }
+        
+    except Exception as e:
+        print(f"❌ Popular Tags Error: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to get popular tags: {str(e)}")
+
+
+@app.get("/tags/search")
+async def search_tags(
+    query: str = Query(..., description="Tag search query"),
+    limit: int = Query(20, ge=1, le=100, description="Number of results to return")
+):
+    """
+    Search for tags by name.
+    
+    Provides intelligent tag discovery with autocomplete capabilities.
+    """
+    if not METADATA_ENABLED:
+        raise HTTPException(status_code=503, detail="Metadata system disabled")
+    
+    try:
+        # Search tags
+        tag_results = tag_manager.search_tags(query, limit=limit)
+        
+        tags_data = []
+        for tag_info in tag_results:
+            tags_data.append({
+                "tag": tag_info.name,
+                "category": tag_info.category.value,
+                "usage_count": tag_info.usage_count,
+                "popularity_score": tag_info.popularity_score,
+                "synonyms": tag_info.synonyms,
+                "related_tags": tag_info.related_tags
+            })
+        
+        return {
+            "status": "success",
+            "query": query,
+            "tags": tags_data,
+            "total_count": len(tags_data),
+            "timestamp": datetime.utcnow().isoformat() + "Z"
+        }
+        
+    except Exception as e:
+        print(f"❌ Tag Search Error: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to search tags: {str(e)}")
+
+
+@app.get("/metadata/stats")
+async def get_metadata_stats():
+    """
+    Get comprehensive metadata system statistics.
+    
+    Returns system-wide statistics including asset counts, storage usage,
+    and popular tags.
+    """
+    if not METADATA_ENABLED:
+        raise HTTPException(status_code=503, detail="Metadata system disabled")
+    
+    try:
+        # Get storage stats
+        storage_stats = storage.get_stats()
+        
+        # Get tag stats
+        tag_stats = tag_manager.get_tag_statistics()
+        
+        # Get search analytics
+        search_analytics = search_engine.get_search_analytics()
+        
+        return {
+            "status": "success",
+            "storage": {
+                "total_assets": storage_stats.total_assets,
+                "total_versions": storage_stats.total_versions,
+                "total_storage_bytes": storage_stats.total_storage_bytes,
+                "average_file_size": storage_stats.average_file_size,
+                "database_size_bytes": storage_stats.database_size_bytes,
+                "assets_by_category": storage_stats.assets_by_category,
+                "assets_by_generator": storage_stats.assets_by_generator
+            },
+            "tags": {
+                "total_tags": tag_stats.get('total_tags', 0),
+                "total_usage": tag_stats.get('total_usage', 0),
+                "tagged_assets": tag_stats.get('tagged_assets', 0),
+                "category_distribution": tag_stats.get('category_distribution', {})
+            },
+            "search": {
+                "total_searches": search_analytics.total_searches,
+                "unique_queries": search_analytics.unique_queries,
+                "avg_results_per_query": search_analytics.avg_results_per_query
+            },
+            "timestamp": datetime.utcnow().isoformat() + "Z"
+        }
+        
+    except Exception as e:
+        print(f"❌ Metadata Stats Error: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to get metadata stats: {str(e)}")
+
+
+@app.post("/metadata/export")
+async def export_metadata(
+    format: str = Query("json", description="Export format (json, csv)"),
+    include_deleted: bool = Query(False, description="Include deleted assets"),
+    asset_ids: Optional[str] = Query(None, description="Comma-separated asset IDs to export")
+):
+    """
+    Export asset metadata.
+    
+    Creates metadata export in specified format with filtering options.
+    """
+    if not METADATA_ENABLED:
+        raise HTTPException(status_code=503, detail="Metadata system disabled")
+    
+    try:
+        # Parse asset IDs
+        id_list = [aid.strip() for aid in asset_ids.split(",")] if asset_ids else None
+        
+        # Get exporter
+        from storage.export_import import get_exporter
+        exporter = get_exporter(storage, tag_manager)
+        
+        # Generate export filename
+        timestamp = datetime.utcnow().strftime("%Y%m%d_%H%M%S")
+        filename = f"metadata_export_{timestamp}.{format}"
+        filepath = f"./exports/{filename}"
+        
+        # Ensure exports directory exists
+        os.makedirs("./exports", exist_ok=True)
+        
+        # Perform export
+        success = False
+        if format.lower() == "json":
+            success = exporter.export_to_json(filepath, include_deleted=include_deleted, asset_ids=id_list)
+        elif format.lower() == "csv":
+            success = exporter.export_to_csv(filepath, include_deleted=include_deleted)
+        else:
+            raise HTTPException(status_code=400, detail=f"Unsupported export format: {format}")
+        
+        if success:
+            # Get file size
+            file_size = os.path.getsize(filepath)
+            
+            return {
+                "status": "success",
+                "filename": filename,
+                "filepath": filepath,
+                "format": format,
+                "file_size_bytes": file_size,
+                "include_deleted": include_deleted,
+                "asset_count": len(id_list) if id_list else "all",
+                "timestamp": datetime.utcnow().isoformat() + "Z"
+            }
+        else:
+            raise HTTPException(status_code=500, detail="Export failed")
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"❌ Export Metadata Error: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to export metadata: {str(e)}")
 
 
 if __name__ == "__main__":

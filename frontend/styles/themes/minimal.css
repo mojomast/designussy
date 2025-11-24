@@ -1,0 +1,276 @@
+/**
+ * Unwritten Worlds - Minimal Theme
+ * Clean, minimal aesthetic while maintaining the eldritch atmosphere
+ */
+
+@import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500&family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,400&family=Inter:wght@300;400;500&display=swap');
+
+/* Override variables for minimal theme */
+:root {
+  /* Core Color Palette - Minimal */
+  --void-black: #0f0f0f;
+  --void-dark: #1a1a1a;
+  --bone-parchment: #d4c5b0;
+  --deep-ink: #2a2a2a;
+  --ghost-grey: #666666;
+  --text-color: #f0f0f0;
+  
+  /* Extended Palette - Minimal Clean */
+  --gold-color: #b8941f;
+  --overlay-dark: rgba(0, 0, 0, 0.5);
+  
+  /* Component Variables - Minimal */
+  --bg-color: var(--void-black);
+  --ink-color: var(--bone-parchment);
+  --accent-color: #b8941f;
+  
+  /* Typography - Minimal */
+  --font-header: 'Cinzel', serif;
+  --font-body: 'Inter', sans-serif;
+  --font-mono: 'Inter', monospace;
+  
+  /* Minimal Spacing */
+  --spacing-xs: 0.25rem;
+  --spacing-sm: 0.5rem;
+  --spacing-md: 1rem;
+  --spacing-lg: 1.5rem;
+  --spacing-xl: 2.5rem;
+  --spacing-2xl: 4rem;
+  
+  /* Minimal Border Radius */
+  --radius-sm: 2px;
+  --radius-md: 4px;
+  --radius-lg: 6px;
+  --radius-full: 9999px;
+  
+  /* Minimal Shadows - Subtle */
+  --shadow-sm: 0 1px 2px rgba(0,0,0,0.1);
+  --shadow-md: 0 2px 4px rgba(0,0,0,0.15);
+  --shadow-lg: 0 4px 8px rgba(0,0,0,0.2);
+  --shadow-xl: 0 8px 16px rgba(0,0,0,0.25);
+  
+  /* Minimal Transitions */
+  --transition-fast: 0.1s ease-out;
+  --transition-normal: 0.2s ease-out;
+  --transition-slow: 0.3s ease-out;
+}
+
+/* Minimal Base Styles */
+body {
+  background: var(--bg-color);
+  color: var(--text-color);
+  font-weight: 300;
+  letter-spacing: 0.01em;
+  line-height: 1.5;
+}
+
+/* Minimal Typography */
+h1, h2, h3, h4, h5, h6 {
+  font-weight: 400;
+  letter-spacing: 0.02em;
+  color: var(--text-color);
+  margin: 0 0 1rem 0;
+}
+
+h1 {
+  font-size: 1.75rem;
+  letter-spacing: 0.05em;
+}
+
+h2 {
+  font-size: 1.375rem;
+  letter-spacing: 0.03em;
+}
+
+h3 {
+  font-size: 1.125rem;
+  letter-spacing: 0.02em;
+}
+
+/* Minimal Button System */
+.btn {
+  background: transparent;
+  border: 1px solid var(--ghost-grey);
+  color: var(--text-color);
+  padding: var(--spacing-sm) var(--spacing-md);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  font-family: var(--font-body);
+  font-size: 0.875rem;
+  font-weight: 400;
+  letter-spacing: 0.025em;
+  transition: all var(--transition-normal);
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+  white-space: nowrap;
+  border-width: 1px;
+}
+
+.btn:hover {
+  background: rgba(255, 255, 255, 0.05);
+  border-color: var(--accent-color);
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-sm);
+}
+
+.btn:focus {
+  outline: none;
+  border-color: var(--accent-color);
+  box-shadow: 0 0 0 2px rgba(184, 148, 31, 0.2);
+}
+
+.btn.primary {
+  background: var(--accent-color);
+  color: var(--void-black);
+  border-color: var(--accent-color);
+  font-weight: 500;
+}
+
+.btn.primary:hover {
+  background: #d4af37;
+  border-color: #d4af37;
+  box-shadow: var(--shadow-md);
+}
+
+.btn.secondary {
+  background: var(--void-dark);
+  border-color: var(--ghost-grey);
+  color: var(--text-color);
+}
+
+.btn.ghost {
+  background: transparent;
+  border-color: transparent;
+  color: var(--text-color);
+}
+
+.btn.ghost:hover {
+  background: rgba(255, 255, 255, 0.03);
+}
+
+/* Minimal Card System */
+.card {
+  background: var(--void-dark);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  transition: all var(--transition-normal);
+  box-shadow: var(--shadow-sm);
+}
+
+.card:hover {
+  border-color: rgba(184, 148, 31, 0.3);
+  box-shadow: var(--shadow-lg);
+  transform: translateY(-1px);
+}
+
+.card-header {
+  padding: var(--spacing-md);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  background: rgba(0, 0, 0, 0.2);
+}
+
+.card-title {
+  font-family: var(--font-header);
+  font-size: 1rem;
+  font-weight: 400;
+  margin: 0;
+  color: var(--text-color);
+  letter-spacing: 0.02em;
+}
+
+.card-body {
+  padding: var(--spacing-md);
+}
+
+.card-footer {
+  padding: var(--spacing-md);
+  border-top: 1px solid rgba(255, 255, 255, 0.05);
+  background: rgba(0, 0, 0, 0.1);
+}
+
+/* Minimal Form Controls */
+.form-group {
+  margin-bottom: var(--spacing-lg);
+}
+
+.form-label {
+  display: block;
+  margin-bottom: var(--spacing-sm);
+  font-family: var(--font-body);
+  font-size: 0.875rem;
+  font-weight: 400;
+  color: var(--text-color);
+  letter-spacing: 0.01em;
+}
+
+.form-input {
+  width: 100%;
+  padding: var(--spacing-sm) var(--spacing-md);
+  background: var(--void-dark);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: var(--radius-sm);
+  color: var(--text-color);
+  font-family: var(--font-body);
+  font-size: 0.875rem;
+  font-weight: 300;
+  transition: all var(--transition-normal);
+}
+
+.form-input:focus {
+  outline: none;
+  border-color: var(--accent-color);
+  box-shadow: 0 0 0 2px rgba(184, 148, 31, 0.15);
+  background: rgba(0, 0, 0, 0.3);
+}
+
+.form-input::placeholder {
+  color: var(--ghost-grey);
+  font-weight: 300;
+}
+
+/* Minimal Grid System */
+.grid {
+  display: grid;
+  gap: var(--spacing-md);
+}
+
+/* Minimal Utilities */
+.container {
+  max-width: 1000px;
+  padding: 0 var(--spacing-lg);
+}
+
+.text-muted {
+  color: var(--ghost-grey);
+  font-weight: 300;
+}
+
+/* Minimal Loading States */
+@keyframes minimalPulse {
+  0%, 100% { opacity: 0.4; }
+  50% { opacity: 0.8; }
+}
+
+.loading-minimal {
+  animation: minimalPulse 1.5s ease-in-out infinite;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: var(--radius-sm);
+}
+
+/* Minimal Focus States */
+*:focus-visible {
+  outline: 2px solid var(--accent-color);
+  outline-offset: 2px;
+}
+
+/* Reduced Motion Support */
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

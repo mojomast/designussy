@@ -1,0 +1,408 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Unwritten Worlds - Interactive Preview Demo</title>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600&family=Cormorant+Garamond:wght@400;500;600&display=swap" rel="stylesheet">
+    <link href="frontend/styles/preview-system.css" rel="stylesheet">
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            background: #0a0a0a;
+            color: #d4c5b0;
+            font-family: 'Cormorant Garamond', serif;
+            overflow: hidden;
+        }
+
+        .demo-container {
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+        }
+
+        .demo-header {
+            padding: 16px 24px;
+            background: rgba(0, 0, 0, 0.7);
+            border-bottom: 1px solid #333;
+            text-align: center;
+        }
+
+        .demo-title {
+            margin: 0;
+            font-family: 'Cinzel', serif;
+            font-size: 24px;
+            font-weight: 600;
+            color: #d4c5b0;
+        }
+
+        .demo-subtitle {
+            margin: 8px 0 0 0;
+            font-size: 16px;
+            opacity: 0.8;
+        }
+
+        .demo-content {
+            flex: 1;
+            display: flex;
+            min-height: 0;
+        }
+
+        .demo-sidebar {
+            width: 300px;
+            background: #1a1a1a;
+            border-right: 1px solid #333;
+            padding: 20px;
+            overflow-y: auto;
+        }
+
+        .demo-main {
+            flex: 1;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .demo-section {
+            background: #1a1a1a;
+            border: 1px solid #333;
+            border-radius: 8px;
+            padding: 20px;
+        }
+
+        .demo-section h3 {
+            margin: 0 0 16px 0;
+            font-family: 'Cinzel', serif;
+            font-size: 18px;
+            color: #8b7355;
+        }
+
+        .demo-controls {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+
+        .demo-btn {
+            padding: 8px 16px;
+            background: #8b7355;
+            border: none;
+            border-radius: 4px;
+            color: #0a0a0a;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .demo-btn:hover {
+            background: #a68b6b;
+        }
+
+        .demo-btn.secondary {
+            background: transparent;
+            border: 1px solid #333;
+            color: #d4c5b0;
+        }
+
+        .demo-btn.secondary:hover {
+            border-color: #8b7355;
+            color: #8b7355;
+        }
+
+        .demo-info {
+            font-size: 14px;
+            line-height: 1.6;
+            opacity: 0.9;
+        }
+
+        .demo-info ul {
+            margin: 8px 0;
+            padding-left: 20px;
+        }
+
+        .demo-info li {
+            margin-bottom: 4px;
+        }
+
+        .demo-preview-container {
+            height: 500px;
+            position: relative;
+        }
+
+        .demo-placeholder {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            background: 
+                linear-gradient(45deg, #0a0a0a 25%, transparent 25%, transparent 75%, #0a0a0a 75%),
+                linear-gradient(45deg, #0a0a0a 25%, transparent 25%, transparent 75%, #0a0a0a 75%);
+            background-size: 20px 20px, 20px 20px;
+            background-position: 0 0, 10px 10px;
+            border-radius: 8px;
+            color: #8b7355;
+            font-size: 18px;
+            font-weight: 600;
+        }
+
+        .demo-features {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 16px;
+            margin-top: 16px;
+        }
+
+        .demo-feature {
+            background: rgba(139, 115, 85, 0.1);
+            border: 1px solid rgba(139, 115, 85, 0.3);
+            border-radius: 8px;
+            padding: 16px;
+        }
+
+        .demo-feature h4 {
+            margin: 0 0 8px 0;
+            font-family: 'Cinzel', serif;
+            font-size: 16px;
+            color: #8b7355;
+        }
+
+        .demo-feature p {
+            margin: 0;
+            font-size: 14px;
+            line-height: 1.5;
+        }
+
+        .demo-status {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 12px;
+            background: rgba(51, 204, 102, 0.1);
+            border: 1px solid rgba(51, 204, 102, 0.3);
+            border-radius: 4px;
+            color: #33cc66;
+            font-size: 14px;
+            font-weight: 600;
+        }
+
+        .demo-status.indicator {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: currentColor;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .demo-code {
+            background: #0a0a0a;
+            border: 1px solid #333;
+            border-radius: 4px;
+            padding: 12px;
+            font-family: monospace;
+            font-size: 13px;
+            color: #d4c5b0;
+            overflow-x: auto;
+        }
+
+        .demo-code .keyword { color: #8b7355; }
+        .demo-code .string { color: #a68b6b; }
+        .demo-code .comment { color: #666; font-style: italic; }
+
+        @media (max-width: 768px) {
+            .demo-content {
+                flex-direction: column;
+            }
+            
+            .demo-sidebar {
+                width: 100%;
+                height: auto;
+                border-right: none;
+                border-bottom: 1px solid #333;
+            }
+            
+            .demo-preview-container {
+                height: 400px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="demo-container">
+        <div class="demo-header">
+            <h1 class="demo-title">Unwritten Worlds - Interactive Preview System</h1>
+            <p class="demo-subtitle">Real-time asset editing with live parameter adjustment</p>
+        </div>
+
+        <div class="demo-content">
+            <div class="demo-sidebar">
+                <div class="demo-section">
+                    <h3>🎨 Features</h3>
+                    <div class="demo-features">
+                        <div class="demo-feature">
+                            <h4>Live Preview</h4>
+                            <p>Real-time asset generation with instant visual feedback</p>
+                        </div>
+                        <div class="demo-feature">
+                            <h4>Parameter Controls</h4>
+                            <p>Interactive sliders, color pickers, and input fields</p>
+                        </div>
+                        <div class="demo-feature">
+                            <h4>Undo/Redo</h4>
+                            <p>Full history tracking with unlimited undo/redo</p>
+                        </div>
+                        <div class="demo-feature">
+                            <h4>Presets</h4>
+                            <p>Save and load parameter configurations</p>
+                        </div>
+                        <div class="demo-feature">
+                            <h4>Zoom & Pan</h4>
+                            <p>Interactive canvas navigation with mouse controls</p>
+                        </div>
+                        <div class="demo-feature">
+                            <h4>Export Options</h4>
+                            <p>Multiple format export (PNG, JPG, SVG, JSON)</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="demo-section">
+                    <h3>🔧 Quick Actions</h3>
+                    <div class="demo-controls">
+                        <button class="demo-btn" onclick="showComponentDemo('preview')">Show Preview</button>
+                        <button class="demo-btn" onclick="showComponentDemo('editor')">Show Editor</button>
+                        <button class="demo-btn secondary" onclick="toggleTheme()">Toggle Theme</button>
+                    </div>
+                    <div class="demo-status">
+                        <span class="demo-status indicator"></span>
+                        System Ready
+                    </div>
+                </div>
+
+                <div class="demo-section">
+                    <h3>📚 Usage Example</h3>
+                    <div class="demo-code">
+<span class="comment">// Import components</span>
+<span class="keyword">import</span> AssetEditor <span class="keyword">from</span> <span class="string">'./components/react/AssetEditor.jsx'</span>;
+<span class="keyword">import</span> PreviewCanvas <span class="keyword">from</span> <span class="string">'./components/react/PreviewCanvas.jsx'</span>;
+
+<span class="comment">// Create editor instance</span>
+<span class="keyword">const</span> editor = <span class="keyword">new</span> AssetEditor({
+  generatorType: <span class="string">'enso'</span>,
+  initialParameters: { chaos: 0.5, complexity: 3 },
+  enableLivePreview: <span class="keyword">true</span>,
+  onSave: (asset) => {
+    console.log(<span class="string">'Asset saved:'</span>, asset);
+  }
+});
+                    </div>
+                </div>
+            </div>
+
+            <div class="demo-main">
+                <div class="demo-section">
+                    <h3>✨ Interactive Preview Canvas</h3>
+                    <div class="demo-info">
+                        <p>The PreviewCanvas component provides real-time asset rendering with:</p>
+                        <ul>
+                            <li>Zoom and pan controls for detailed inspection</li>
+                            <li>Auto-generation queue for smooth parameter updates</li>
+                            <li>Loading states and error handling</li>
+                            <li>Responsive design with touch support</li>
+                        </ul>
+                    </div>
+                    <div class="demo-preview-container">
+                        <div class="demo-placeholder">
+                            Preview Canvas Component
+                        </div>
+                    </div>
+                </div>
+
+                <div class="demo-section">
+                    <h3>🎛️ Parameter Controls</h3>
+                    <div class="demo-info">
+                        <p>Comprehensive parameter system with:</p>
+                        <ul>
+                            <li>Type-safe input validation</li>
+                            <li>Real-time error reporting</li>
+                            <li>Category-based parameter grouping</li>
+                            <li>Responsive layout for all screen sizes</li>
+                        </ul>
+                    </div>
+                    <div class="demo-preview-container" style="height: 300px;">
+                        <div class="demo-placeholder">
+                            Parameter Controls Component
+                        </div>
+                    </div>
+                </div>
+
+                <div class="demo-section">
+                    <h3>🔗 WebSocket Integration</h3>
+                    <div class="demo-info">
+                        <p>LivePreviewManager enables real-time communication:</p>
+                        <ul>
+                            <li>WebSocket-based preview updates</li>
+                            <li>Automatic reconnection with exponential backoff</li>
+                            <li>Heartbeat monitoring for connection health</li>
+                            <li>Message queuing for reliable delivery</li>
+                        </ul>
+                    </div>
+                    <div class="demo-code">
+<span class="comment">// Initialize Live Preview Manager</span>
+<span class="keyword">const</span> previewManager = <span class="keyword">new</span> LivePreviewManager({
+  endpoint: <span class="string">'ws://localhost:8001/ws/preview'</span>,
+  onPreviewUpdate: (update) => {
+    <span class="keyword">switch</span> (update.type) {
+      <span class="keyword">case</span> <span class="string">'complete'</span>:
+        <span class="comment">// Handle completed preview</span>
+        <span class="keyword">break</span>;
+    }
+  }
+});
+
+<span class="comment">// Request preview update</span>
+previewManager.requestPreview(parameters, <span class="string">'enso'</span>);
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function showComponentDemo(component) {
+            alert(`Showing ${component} component demo - This would load the actual React component in production`);
+        }
+
+        function toggleTheme() {
+            const themes = ['default', 'dark', 'minimal', 'chaotic'];
+            const current = document.body.dataset.theme || 'default';
+            const next = themes[(themes.indexOf(current) + 1) % themes.length];
+            document.body.dataset.theme = next;
+            
+            const themeNames = {
+                'default': 'Default (Eldritch)',
+                'dark': 'Dark',
+                'minimal': 'Minimal',
+                'chaotic': 'Chaotic'
+            };
+            
+            alert(`Theme changed to: ${themeNames[next]}`);
+        }
+
+        // Simulate live updates
+        setInterval(() => {
+            const indicators = document.querySelectorAll('.demo-status.indicator');
+            indicators.forEach(indicator => {
+                indicator.style.opacity = Math.random() > 0.5 ? '1' : '0.5';
+            });
+        }, 2000);
+    </script>
+</body>
+</html>
