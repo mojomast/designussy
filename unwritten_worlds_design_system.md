@@ -1,8 +1,8 @@
-# 🌑 Unwritten Worlds: Design System & Orchestration Guide
+# 🌑 voidussy: Design System & Orchestration Guide
 
 > *A manual for weaving the void.*
 
-This document details the atomic elements of the "Unwritten Worlds" aesthetic and provides a guide for orchestrating them into complex, cinematic sequences.
+This document details the atomic elements of the "voidussy" aesthetic and provides a guide for orchestrating them into complex, cinematic sequences.
 
 ---
 
@@ -108,7 +108,7 @@ async function playSummoningSequence() {
 
 ---
 
-## 4. Procedural Integration (The NanoBanana)
+## 4. Procedural Integration (The voidussy)
 
 When using the Python Backend (`port 8001`), fetch assets dynamically to ensure no two loading screens are identical.
 

@@ -2,7 +2,7 @@
 
 ## Overview
 
-This document describes the organized asset directory structure for the Unwritten Worlds project, designed for clarity and maintainability.
+This document describes the organized asset directory structure for the voidussy project, designed for clarity and maintainability.
 
 ## Directory Structure
 
@@ -56,7 +56,7 @@ assets/
 
 ### `/generated/` - Procedural Assets
 
-**Purpose**: Contains all procedurally generated assets created by the NanoBanana Generator.
+**Purpose**: Contains all procedurally generated assets created by the voidussy generator.
 
 **Subdirectories**:
 - **`backgrounds/`**: Generated parchment textures (void_parchment_*.png)

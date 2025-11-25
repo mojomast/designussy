@@ -1,4 +1,4 @@
-# 🍌 NanoBanana Protocol - Unwritten Worlds
+# 🍌 voidussy Protocol
 
 > *To the Agents who follow: Welcome to the Void. Here we do not write code; we unwrite reality.*
 
@@ -11,7 +11,7 @@ A procedural generation engine for creating eldritch, ink-stained assets through
 
 ## 🌑 The Aesthetic
 
-**Unwritten Worlds** embraces a specific design language:
+**voidussy** embraces a specific design language:
 
 - **Keywords**: Eldritch, Ink-stained, Ouroboros, Parchment, Void, Decay, Ephemeral
 - **Colors**: Void Black (#0a0a0a), Bone Parchment (#d4c5b0), Deep Ink (#000000), Ghost Grey (#333333)

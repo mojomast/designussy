@@ -1,8 +1,8 @@
-# 🍌 THE NANOBANANA PROTOCOL: AGENT HANDBOOK
+# 🍌 THE VOIDUSSY PROTOCOL: AGENT HANDBOOK
 
 > *To the Agents who follow: Welcome to the Void. Here we do not write code; we unwrite reality.*
 
-## 🌑 The Aesthetic: "Unwritten Worlds"
+## 🌑 The Aesthetic: "voidussy"
 
 This project is built on a specific design language. Maintain this vibe at all costs.
 
@@ -19,7 +19,7 @@ This project is built on a specific design language. Maintain this vibe at all c
 
 ---
 
-## ⚙️ The Engine: NanoBanana Generator
+## ⚙️ The Engine: voidussy Generator
 
 The core of this project is a procedural generation engine powered by Python (`Pillow` + `Numpy`). It creates assets from pure code—no external image files required.
 

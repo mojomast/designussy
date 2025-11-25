@@ -1,8 +1,8 @@
-# NanoBanana Protocol - Development Plan
+# voidussy - Development Plan
 
 ## Overview
 
-A phased approach to transform the NanoBanana Protocol into a production-ready system while maintaining the "Unwritten Worlds" aesthetic.
+A phased approach to transform the voidussy protocol into a production-ready system while maintaining the "voidussy" aesthetic.
 
 ---
 

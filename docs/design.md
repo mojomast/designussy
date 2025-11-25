@@ -1,8 +1,8 @@
-# NanoBanana Protocol - System Design
+# voidussy - System Design
 
 ## Goals
 
-Transform the NanoBanana Protocol into a production-ready procedural generation system while maintaining the "Unwritten Worlds" aesthetic vision. The system will serve as a scalable backend for generating eldritch/ink-themed assets with LLM-directed creative control.
+Transform the voidussy protocol into a production-ready procedural generation system while maintaining the "voidussy" aesthetic vision. The system will serve as a scalable backend for generating eldritch/ink-themed assets with LLM-directed creative control.
 
 ## Non-Goals
 
