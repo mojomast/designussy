@@ -1,5 +1,5 @@
 /**
- * Unwritten Worlds - Shared JavaScript Library
+ * voidussy - Shared JavaScript Library
  * Common functionality extracted from all HTML files
  * Maintains consistent behavior across all pages
  */
@@ -74,7 +74,7 @@
       div.innerHTML = svgFilters;
       div.id = 'unwritten-svg-filters';
       document.body.insertBefore(div, document.body.firstChild);
-      console.log("Unwritten Worlds: SVG Filters Injected.");
+      console.log("voidussy: SVG Filters Injected.");
     }
   };
 
@@ -313,7 +313,7 @@
   // ============================================================================
   
   const Settings = {
-    KEY: 'unwritten_worlds_settings_v1',
+    KEY: 'voidussy_settings_v1',
     
     /**
      * Get stored settings
@@ -636,14 +636,14 @@
       Modal.initAPISettings();
     }
     
-    console.log('Unwritten Worlds Common JS initialized');
+    console.log('voidussy Common JS initialized');
   };
 
   // ============================================================================
   // EXPORT TO GLOBAL SCOPE
   // ============================================================================
   
-  window.Unwritten = {
+  window.Voidussy = {
     API,
     AssetLoader,
     Settings,

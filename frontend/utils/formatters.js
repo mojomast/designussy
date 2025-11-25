@@ -1,5 +1,5 @@
 /**
- * Unwritten Worlds - Data Formatters
+ * voidussy - Data Formatters
  * Utilities for formatting data for display
  */
 
@@ -134,7 +134,7 @@ class AssetFormatters {
     const extension = 'png';
     const type = this.formatAssetType(asset.generator_type || asset.type).replace(/\s+/g, '_').toLowerCase();
     
-    return `unwritten_${type}_${timestamp}.${extension}`;
+    return `voidussy_${type}_${timestamp}.${extension}`;
   }
 
   /**
@@ -270,5 +270,5 @@ class AssetFormatters {
 if (typeof module !== 'undefined' && module.exports) {
   module.exports = { AssetFormatters };
 } else if (typeof window !== 'undefined') {
-  window.UnwrittenFormatters = { AssetFormatters };
+  window.VoidussyFormatters = { AssetFormatters };
 }

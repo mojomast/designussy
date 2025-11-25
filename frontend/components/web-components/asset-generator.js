@@ -460,7 +460,7 @@ class AssetGenerator extends HTMLElement {
 
     const link = document.createElement('a');
     link.href = this.generatedAsset.url;
-    link.download = `unwritten_${this.generatedAsset.type}_${Date.now()}.png`;
+    link.download = `voidussy_${this.generatedAsset.type}_${Date.now()}.png`;
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
