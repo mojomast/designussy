@@ -3,6 +3,8 @@ Enso Generator
 
 This module implements the Ink Enso circle generator,
 creating organic circular brush strokes with chaos and complexity.
+
+Updated to be type-aware and support ElementType-based generation.
 """
 
 import math
@@ -15,6 +17,14 @@ from .schemas import GenerationParameters
 from .color_utils import apply_palette_to_parameters, hex_to_rgb
 from .presets import get_preset_manager
 
+# Import type system components
+try:
+    from enhanced_design.element_types import ElementType
+    HAS_TYPE_SYSTEM = True
+except ImportError:
+    HAS_TYPE_SYSTEM = False
+    ElementType = None
+
 
 class EnsoGenerator(BaseGenerator):
     """
@@ -23,16 +33,20 @@ class EnsoGenerator(BaseGenerator):
     Creates organic circular brush strokes with variable complexity,
     chaos, and color for meditative and artistic effects.
     
+    Updated to support type-aware generation from ElementType definitions.
+    
     Supports advanced parameters including:
     - Quality controls and resolution settings
     - Custom color palettes and brush styles
     - Preset application for different enso styles
     - Enhanced organic flow and chaos parameters
+    - Type-based parameter transformation
     """
     
     def __init__(self, width: int = 800, height: int = 800,
                  color: Optional[Tuple[int, int, int, int]] = None,
-                 complexity: int = 40, chaos: float = 1.0, **kwargs):
+                 complexity: int = 40, chaos: float = 1.0,
+                 element_type: Optional[ElementType] = None, **kwargs):
         """
         Initialize the enso generator.
         
@@ -42,6 +56,7 @@ class EnsoGenerator(BaseGenerator):
             color: RGBA color for the enso strokes
             complexity: Number of brush strokes (higher = more detailed)
             chaos: Chaos factor for organic variation (0.1 = stable, 2.0 = very chaotic)
+            element_type: Optional ElementType for type-aware generation
             **kwargs: Additional configuration options
         """
         if color is None:
@@ -60,6 +75,22 @@ class EnsoGenerator(BaseGenerator):
         self.complexity = complexity
         self.chaos = chaos
         self.preset_manager = get_preset_manager()
+        self.element_type = element_type
+        
+    def set_element_type(self, element_type: ElementType) -> 'EnsoGenerator':
+        """
+        Set the ElementType for type-aware generation.
+        
+        Args:
+            element_type: ElementType definition to use
+            
+        Returns:
+            Self for method chaining
+        """
+        if HAS_TYPE_SYSTEM and isinstance(element_type, ElementType):
+            self.element_type = element_type
+            self.logger.info(f"Set ElementType: {element_type.id}")
+        return self
         
     def generate(self, **kwargs) -> Image.Image:
         """
@@ -69,11 +100,16 @@ class EnsoGenerator(BaseGenerator):
             **kwargs: Generation parameters including:
                 - GenerationParameters object
                 - Legacy parameters (color, complexity, chaos)
+                - ElementType-based parameters
                 - Custom overrides
                 
         Returns:
             PIL Image of the generated enso circle
         """
+        # Handle type-aware generation first
+        if self.element_type and HAS_TYPE_SYSTEM:
+            return self._generate_from_element_type(**kwargs)
+            
         # Handle advanced parameters
         if 'parameters' in kwargs and isinstance(kwargs['parameters'], GenerationParameters):
             parameters = kwargs['parameters']
@@ -114,6 +150,115 @@ class EnsoGenerator(BaseGenerator):
         img = self.validate_output_size(img)
         
         self.logger.info("Enso circle generation completed")
+        return img
+    
+    def _generate_from_element_type(self, **kwargs) -> Image.Image:
+        """
+        Generate enso circle from ElementType definition.
+        
+        Args:
+            **kwargs: Additional parameter overrides
+            
+        Returns:
+            PIL Image of the generated enso circle
+        """
+        if not self.element_type:
+            raise ValueError("No ElementType set for type-aware generation")
+            
+        # Get parameters from ElementType
+        params = self.element_type.get_effective_params()
+        
+        # Apply any additional overrides from kwargs
+        for key, value in kwargs.items():
+            if key not in ['parameters']:  # Skip GenerationParameters in type mode
+                params[key] = value
+        
+        # Set up generation parameters
+        effective_width = params.get('width', self.width)
+        effective_height = params.get('height', self.height)
+        
+        # Update dimensions
+        self.width = effective_width
+        self.height = effective_height
+        
+        # Convert color if needed
+        if 'color' in params:
+            if isinstance(params['color'], str):
+                hex_color = params['color'].lstrip('#')
+                rgb_color = tuple(int(hex_color[i:i+2], 16) for i in (0, 2, 4))
+                params['color'] = rgb_color + (255,)
+        
+        # Create GenerationParameters for consistency
+        generation_params = GenerationParameters(
+            width=effective_width,
+            height=effective_height,
+            base_color=params.get('color', '#000000'),  # Default to black
+            complexity=params.get('complexity', 0.6),
+            randomness=params.get('chaos', 1.0) / 2.0,  # Normalize chaos to 0-1 range
+            quality=params.get('quality', 'medium'),
+            style_preset=params.get('style_preset', 'detailed')
+        )
+        
+        # Apply style preset if specified
+        if generation_params.style_preset:
+            preset_name = f"enso_{generation_params.style_preset}"
+            try:
+                generation_params = self.preset_manager.apply_preset(generation_params, preset_name)
+            except ValueError:
+                pass
+        
+        # Generate the enso
+        img = self._generate_enso_advanced(generation_params)
+        
+        # Apply type-specific effects
+        img = self._apply_type_specific_effects(img, params)
+        
+        self.logger.info(f"Generated enso from ElementType: {self.element_type.id}")
+        return img
+    
+    def _apply_type_specific_effects(self, img: Image.Image, params: Dict[str, Any]) -> Image.Image:
+        """
+        Apply effects specific to the ElementType configuration.
+        
+        Args:
+            img: Base PIL Image
+            params: Type-specific parameters
+            
+        Returns:
+            PIL Image with type-specific effects applied
+        """
+        # Style-specific adjustments
+        style = params.get('style', 'balanced')
+        
+        if style == 'meditative':
+            # Add subtle blur for meditative effect
+            img = img.filter(ImageFilter.GaussianBlur(radius=1))
+        elif style == 'energetic':
+            # Increase contrast for energetic look
+            enhancer = ImageEnhance.Contrast(img)
+            img = enhancer.enhance(1.2)
+        
+        # Custom opacity based on type
+        if 'opacity' in params:
+            opacity = params['opacity']
+            if opacity < 1.0:
+                # Convert to RGBA and apply opacity
+                if img.mode != 'RGBA':
+                    img = img.convert('RGBA')
+                img.putalpha(int(255 * opacity))
+        
+        # Brush characteristics
+        if 'brush_thickness' in params:
+            thickness = params['brush_thickness']
+            # This would require re-generation with different thickness
+            # For now, we can apply a scaling effect
+            img = img.resize((int(self.width * thickness), int(self.height * thickness)), 
+                           Image.Resampling.LANCZOS)
+            # Center crop back to original size
+            left = (img.width - self.width) // 2
+            top = (img.height - self.height) // 2
+            img = img.crop((left, top, left + self.width, top + self.height))
+        
         return img
     
     def _generate_enso_advanced(self, parameters: GenerationParameters) -> Image.Image:
@@ -369,6 +514,26 @@ class EnsoGenerator(BaseGenerator):
             'style_preset': 'detailed'
         }
     
+    def get_type_aware_params(self) -> Dict[str, Any]:
+        """
+        Get parameters expected by ElementType schema.
+        
+        Returns:
+            Dictionary of type-aware parameters
+        """
+        return {
+            'width': {'type': 'int', 'default': 800, 'min': 64, 'max': 2048},
+            'height': {'type': 'int', 'default': 800, 'min': 64, 'max': 2048},
+            'color': {'type': 'str', 'default': '#000000', 'description': 'Hex color string'},
+            'complexity': {'type': 'int', 'default': 40, 'min': 5, 'max': 200},
+            'chaos': {'type': 'float', 'default': 1.0, 'min': 0.1, 'max': 3.0},
+            'quality': {'type': 'str', 'default': 'medium', 'choices': ['low', 'medium', 'high', 'ultra']},
+            'style_preset': {'type': 'str', 'default': 'detailed', 'choices': ['minimal', 'detailed', 'chaotic', 'ordered']},
+            'style': {'type': 'str', 'default': 'balanced', 'choices': ['meditative', 'energetic', 'balanced', 'minimal', 'chaotic', 'ordered']},
+            'opacity': {'type': 'float', 'default': 1.0, 'min': 0.1, 'max': 1.0},
+            'brush_thickness': {'type': 'float', 'default': 1.0, 'min': 0.1, 'max': 2.0}
+        }
+    
     def get_available_presets(self) -> Dict[str, str]:
         """
         Get available presets specific to enso generation.
@@ -452,34 +617,40 @@ class EnsoGenerator(BaseGenerator):
             "meditative": {
                 "complexity": 20,
                 "chaos": 0.3,
-                "base_color": "#000000",
-                "style_preset": "minimal"
+                "color": "#000000",
+                "style_preset": "minimal",
+                "style": "meditative"
             },
             "energetic": {
                 "complexity": 60,
                 "chaos": 1.5,
-                "base_color": "#8b0000",
-                "style_preset": "chaotic"
+                "color": "#8b0000",
+                "style_preset": "chaotic",
+                "style": "energetic"
             },
             "balanced": {
                 "complexity": 40,
                 "chaos": 1.0,
-                "style_preset": "detailed"
+                "style_preset": "detailed",
+                "style": "balanced"
             },
             "minimal": {
                 "complexity": 15,
                 "chaos": 0.2,
-                "style_preset": "minimal"
+                "style_preset": "minimal",
+                "style": "minimal"
             },
             "chaotic": {
                 "complexity": 80,
                 "chaos": 2.0,
-                "style_preset": "chaotic"
+                "style_preset": "chaotic",
+                "style": "chaotic"
             },
             "ordered": {
                 "complexity": 30,
                 "chaos": 0.1,
-                "style_preset": "ordered"
+                "style_preset": "ordered",
+                "style": "ordered"
             }
         }
         

@@ -1,0 +1,94 @@
+{
+  "id": "sigil_v1",
+  "name": "Arcane Sigil",
+  "description": "Mystical geometric runes and symbols with outer circles, connecting lines, and ethereal glow effects in the void aesthetic",
+  "category": "glyphs",
+  "tags": ["sigil", "symbol", "geometric", "mystical", "rune", "glow", "void", "arcane"],
+  "render_strategy": {
+    "engine": "pil",
+    "generator_name": "SigilGenerator"
+  },
+  "param_schema": {
+    "type": "object",
+    "properties": {
+      "width": {
+        "type": "integer",
+        "default": 500,
+        "description": "Image width in pixels",
+        "minimum": 100,
+        "maximum": 1024
+      },
+      "height": {
+        "type": "integer",
+        "default": 500,
+        "description": "Image height in pixels",
+        "minimum": 100,
+        "maximum": 1024
+      },
+      "base_color": {
+        "type": "string",
+        "default": "#d4c5b0",
+        "description": "RGB hex color for the sigil lines",
+        "pattern": "^#[0-9a-fA-F]{6}$"
+      },
+      "point_count_range": {
+        "type": "array",
+        "default": [3, 7],
+        "description": "Min/max number of points in the sigil",
+        "items": {
+          "type": "integer"
+        },
+        "minItems": 2,
+        "maxItems": 2
+      }
+    },
+    "required": ["width", "height"]
+  },
+  "variants": [
+    {
+      "variant_id": "simple",
+      "name": "Simple Sigil",
+      "description": "Minimal 3-4 point sigil with basic geometry",
+      "parameters": {
+        "point_count_range": [3, 4]
+      },
+      "weight": 0.3
+    },
+    {
+      "variant_id": "complex",
+      "name": "Complex Sigil",
+      "description": "Detailed 6-7 point sigil with secondary layers",
+      "parameters": {
+        "point_count_range": [6, 7]
+      },
+      "weight": 0.4
+    },
+    {
+      "variant_id": "balanced",
+      "name": "Balanced Sigil",
+      "description": "Medium complexity 4-6 point sigil",
+      "parameters": {
+        "point_count_range": [4, 6]
+      },
+      "weight": 0.3
+    }
+  ],
+  "diversity_config": {
+    "strategy": "parameter_sampling",
+    "parameter_sampling": {
+      "distributions": {
+        "point_count_range": {
+          "type": "uniform",
+          "min": 3,
+          "max": 7
+        }
+      }
+    },
+    "diversity_target": 0.6,
+    "max_variations": 80
+  },
+  "version": "1.0.0",
+  "created_by": "system",
+  "is_active": true,
+  "is_template": false
+}

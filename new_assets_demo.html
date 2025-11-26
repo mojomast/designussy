@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Voidussy - New Assets Demo</title>
+
+    <!-- Shared Component Library -->
+    <link rel="stylesheet" href="assets/css/unwritten_worlds_common.css">
+
+    <style>
+        body {
+            padding: 40px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .demo-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            max-width: 1400px;
+            margin: 40px 0;
+        }
+
+        .asset-card {
+            background: #0a0a0a;
+            border: 1px solid #222;
+            border-radius: 8px;
+            padding: 20px;
+            text-align: center;
+            transition: all 0.3s ease;
+        }
+
+        .asset-card:hover {
+            border-color: #444;
+            transform: translateY(-5px);
+        }
+
+        .asset-preview {
+            width: 100%;
+            height: 200px;
+            background: #050505;
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 15px;
+            overflow: hidden;
+        }
+
+        .asset-preview img {
+            max-width: 100%;
+            max-height: 100%;
+            object-fit: contain;
+        }
+
+        .asset-name {
+            font-size: 0.9rem;
+            color: #888;
+            margin-bottom: 5px;
+        }
+
+        .asset-description {
+            font-size: 0.8rem;
+            color: #666;
+        }
+
+        .category-header {
+            width: 100%;
+            max-width: 1400px;
+            margin-top: 40px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #222;
+        }
+
+        .controls {
+            margin: 20px 0;
+            display: flex;
+            gap: 10px;
+        }
+
+        button {
+            background: #1a1a1a;
+            border: 1px solid #333;
+            color: #aaa;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        button:hover {
+            background: #222;
+            border-color: #444;
+            color: #fff;
+        }
+    </style>
+</head>
+
+<body>
+    <!-- Texture Overlay -->
+    <div class="texture-overlay"></div>
+
+    <h1>voidussy</h1>
+    <div class="font-cinzel text-accent" style="margin-bottom: 1rem;">New Assets Showcase</div>
+    <p class="font-cormorant" style="color: #666; max-width: 600px; text-align: center;">
+        Explore the newly generated procedural assets for the Voidussy design language.
+        Click "Randomize" to see different variants of each asset.
+    </p>
+
+    <div class="controls">
+        <button onclick="randomizeAll()">Randomize All</button>
+        <button onclick="preloadAllAssets()">Preload All</button>
+    </div>
+
+    <!-- GLYPHS -->
+    <div class="category-header">
+        <h2 class="font-cinzel">Glyphs</h2>
+    </div>
+    <div class="demo-grid" id="glyphs-grid"></div>
+
+    <!-- CREATURES -->
+    <div class="category-header">
+        <h2 class="font-cinzel">Creatures</h2>
+    </div>
+    <div class="demo-grid" id="creatures-grid"></div>
+
+    <!-- BACKGROUNDS -->
+    <div class="category-header">
+        <h2 class="font-cinzel">Backgrounds</h2>
+    </div>
+    <div class="demo-grid" id="backgrounds-grid"></div>
+
+    <!-- UI ELEMENTS -->
+    <div class="category-header">
+        <h2 class="font-cinzel">UI Elements</h2>
+    </div>
+    <div class="demo-grid" id="ui-grid"></div>
+
+    <!-- Load Core Libraries -->
+    <script src="assets/js/unwritten_worlds_core.js"></script>
+    <script src="assets/js/unwritten_worlds_assets.js"></script>
+
+    <script>
+        // Render asset cards
+        function renderAssets() {
+            const categories = ['glyphs', 'creatures', 'backgrounds', 'ui'];
+
+            categories.forEach(category => {
+                const grid = document.getElementById(`${category}-grid`);
+                const assets = UnwrittenAssets.getCategory(category);
+
+                Object.entries(assets).forEach(([name, asset]) => {
+                    const card = document.createElement('div');
+                    card.className = 'asset-card';
+                    card.dataset.category = category;
+                    card.dataset.name = name;
+
+                    const path = UnwrittenAssets.getRandom(category, name);
+
+                    card.innerHTML = `
+                        <div class="asset-preview">
+                            <img src="${path}" alt="${name}">
+                        </div>
+                        <div class="asset-name font-cinzel">${name.replace(/_/g, ' ')}</div>
+                        <div class="asset-description font-cormorant">${asset.description}</div>
+                        <div class="asset-description font-cormorant" style="margin-top: 5px; color: #444;">
+                            ${asset.count} variant${asset.count > 1 ? 's' : ''}
+                        </div>
+                    `;
+
+                    grid.appendChild(card);
+                });
+            });
+        }
+
+        // Randomize all assets
+        function randomizeAll() {
+            document.querySelectorAll('.asset-card').forEach(card => {
+                const category = card.dataset.category;
+                const name = card.dataset.name;
+                const img = card.querySelector('img');
+                const path = UnwrittenAssets.getRandom(category, name);
+                img.src = path;
+            });
+        }
+
+        // Preload all assets
+        async function preloadAllAssets() {
+            console.log('Preloading all assets...');
+            const categories = ['glyphs', 'creatures', 'backgrounds', 'ui'];
+            let loaded = 0;
+            let total = 0;
+
+            // Count total
+            categories.forEach(category => {
+                const assets = UnwrittenAssets.getCategory(category);
+                Object.values(assets).forEach(asset => {
+                    total += asset.count;
+                });
+            });
+
+            // Preload
+            for (const category of categories) {
+                const assets = UnwrittenAssets.getCategory(category);
+                for (const [name, asset] of Object.entries(assets)) {
+                    try {
+                        await UnwrittenAssets.preloadAll(category, name);
+                        loaded += asset.count;
+                        console.log(`Preloaded ${name}: ${loaded}/${total}`);
+                    } catch (error) {
+                        console.error(`Failed to preload ${category}/${name}:`, error);
+                    }
+                }
+            }
+
+            console.log(`Preloading complete: ${loaded}/${total} assets loaded`);
+            alert(`Preloaded ${loaded} assets!`);
+        }
+
+        // Initialize
+        renderAssets();
+        console.log('Asset showcase initialized');
+    </script>
+</body>
+
+</html>

@@ -1,0 +1,653 @@
+/**
+ * @fileoverview DiversityDashboard React Component
+ * @description Component for displaying diversity metrics, trends, and analysis
+ * @version 1.0.0
+ */
+
+import React, { useState, useEffect, useCallback } from 'react';
+import PropTypes from 'prop-types';
+import { APIClient } from '../utils/api-client.js';
+
+/**
+ * Component for displaying diversity metrics, trends, and analysis
+ * @param {Object} props - Component props
+ * @param {Array} props.elementTypes - Available element types
+ * @param {Function} props.onTypeSelect - Callback when a type is selected for analysis
+ * @param {string} props.theme - Theme to apply
+ * @param {Object} props.initialFilters - Initial filter settings
+ * @returns {JSX.Element} DiversityDashboard component
+ */
+const DiversityDashboard = ({
+  elementTypes = [],
+  onTypeSelect = () => {},
+  theme = 'dark',
+  initialFilters = {},
+  className = '',
+  ...props
+}) {
+  const [activeTab, setActiveTab] = useState('overview'); // 'overview', 'trends', 'analysis', 'reports'
+  const [selectedType, setSelectedType] = useState(null);
+  const [timeRange, setTimeRange] = useState('7d'); // '1h', '24h', '7d', '30d', 'all'
+  const [diversityData, setDiversityData] = useState(null);
+  const [trendsData, setTrendsData] = useState(null);
+  const [analysisData, setAnalysisData] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+  const [realTimeEnabled, setRealTimeEnabled] = useState(false);
+  const [exportDialogOpen, setExportDialogOpen] = useState(false);
+  const [apiClient] = useState(() => new APIClient({ endpoint: 'http://localhost:8001' }));
+
+  // Load diversity data
+  useEffect(() => {
+    loadDiversityData();
+    loadTrendsData();
+  }, [selectedType, timeRange]);
+
+  const loadDiversityData = useCallback(async () => {
+    if (!selectedType) return;
+    
+    setLoading(true);
+    setError(null);
+    
+    try {
+      const params = new URLSearchParams({
+        element_type_id: selectedType.id,
+        time_range: timeRange
+      });
+      
+      const response = await fetch(`http://localhost:8001/diversity/metrics?${params}`);
+      const data = await response.json();
+      
+      if (data.status === 'success') {
+        setDiversityData(data.metrics);
+      } else {
+        throw new Error(data.error || 'Failed to load diversity data');
+      }
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  }, [selectedType, timeRange]);
+
+  const loadTrendsData = useCallback(async () => {
+    setLoading(true);
+    
+    try {
+      const params = new URLSearchParams({
+        time_range: timeRange,
+        element_type_id: selectedType?.id || 'all'
+      });
+      
+      const response = await fetch(`http://localhost:8001/diversity/trends?${params}`);
+      const data = await response.json();
+      
+      if (data.status === 'success') {
+        setTrendsData(data.trends);
+      }
+    } catch (err) {
+      console.error('Failed to load trends data:', err);
+    } finally {
+      setLoading(false);
+    }
+  }, [selectedType, timeRange]);
+
+  const loadClusterAnalysis = useCallback(async () => {
+    if (!selectedType) return;
+    
+    setLoading(true);
+    
+    try {
+      const response = await fetch(`http://localhost:8001/diversity/cluster-analysis`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          element_type_id: selectedType.id,
+          analysis_type: 'full',
+          cluster_count: 8
+        })
+      });
+      
+      const data = await response.json();
+      
+      if (data.status === 'success') {
+        setAnalysisData(data.analysis);
+      }
+    } catch (err) {
+      console.error('Failed to load cluster analysis:', err);
+    } finally {
+      setLoading(false);
+    }
+  }, [selectedType]);
+
+  const handleExportReport = useCallback(async (format = 'json') => {
+    if (!selectedType) return;
+    
+    try {
+      const params = new URLSearchParams({
+        element_type_id: selectedType.id,
+        time_range: timeRange,
+        format
+      });
+      
+      const response = await fetch(`http://localhost:8001/diversity/export?${params}`);
+      
+      if (response.ok) {
+        const blob = await response.blob();
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `diversity-report-${selectedType.id}-${Date.now()}.${format}`;
+        link.click();
+        URL.revokeObjectURL(url);
+      }
+    } catch (err) {
+      console.error('Export failed:', err);
+    }
+  }, [selectedType, timeRange]);
+
+  const getDiversityScoreColor = (score) => {
+    if (score >= 0.8) return '#4ade80'; // Green - High diversity
+    if (score >= 0.6) return '#fbbf24'; // Yellow - Medium diversity
+    if (score >= 0.4) return '#f97316'; // Orange - Low diversity
+    return '#ef4444'; // Red - Very low diversity
+  };
+
+  const getTimeRangeLabel = (range) => {
+    const labels = {
+      '1h': 'Last Hour',
+      '24h': 'Last 24 Hours',
+      '7d': 'Last 7 Days',
+      '30d': 'Last 30 Days',
+      'all': 'All Time'
+    };
+    return labels[range] || range;
+  };
+
+  const renderOverview = () => {
+    if (!diversityData) {
+      return (
+        <div className="uw-overview-empty">
+          <p>Select an element type to view diversity metrics</p>
+        </div>
+      );
+    }
+
+    return (
+      <div className="uw-overview-grid">
+        {/* Key Metrics */}
+        <div className="uw-metrics-section">
+          <h3 className="uw-section-title">Key Metrics</h3>
+          
+          <div className="uw-metrics-grid">
+            <div className="uw-metric-card">
+              <div className="uw-metric-header">
+                <span className="uw-metric-label">Overall Diversity Score</span>
+                <div 
+                  className="uw-metric-indicator"
+                  style={{ backgroundColor: getDiversityScoreColor(diversityData.overall_score) }}
+                ></div>
+              </div>
+              <div className="uw-metric-value">
+                {diversityData.overall_score?.toFixed(3) || 'N/A'}
+              </div>
+              <div className="uw-metric-description">
+                Target: {diversityData.target_score?.toFixed(3) || 'N/A'}
+              </div>
+            </div>
+
+            <div className="uw-metric-card">
+              <div className="uw-metric-header">
+                <span className="uw-metric-label">Generated Assets</span>
+              </div>
+              <div className="uw-metric-value">
+                {diversityData.generation_count || 0}
+              </div>
+              <div className="uw-metric-description">
+                In selected time range
+              </div>
+            </div>
+
+            <div className="uw-metric-card">
+              <div className="uw-metric-header">
+                <span className="uw-metric-label">Parameter Coverage</span>
+              </div>
+              <div className="uw-metric-value">
+                {diversityData.parameter_coverage?.toFixed(1) || 'N/A'}%
+              </div>
+              <div className="uw-metric-description">
+                Parameters explored
+              </div>
+            </div>
+
+            <div className="uw-metric-card">
+              <div className="uw-metric-header">
+                <span className="uw-metric-label">Cluster Count</span>
+              </div>
+              <div className="uw-metric-value">
+                {diversityData.cluster_analysis?.cluster_count || 0}
+              </div>
+              <div className="uw-metric-description">
+                Distinct asset groups
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Parameter Analysis */}
+        <div className="uw-parameters-section">
+          <h3 className="uw-section-title">Parameter Analysis</h3>
+          
+          {diversityData.parameter_distributions && (
+            <div className="uw-parameters-grid">
+              {Object.entries(diversityData.parameter_distributions).map(([param, dist]) => (
+                <div key={param} className="uw-parameter-card">
+                  <h4 className="uw-parameter-name">{param}</h4>
+                  <div className="uw-parameter-stats">
+                    <div className="uw-stat">
+                      <span className="uw-stat-label">Min:</span>
+                      <span className="uw-stat-value">{dist.min?.toFixed(3) || 'N/A'}</span>
+                    </div>
+                    <div className="uw-stat">
+                      <span className="uw-stat-label">Max:</span>
+                      <span className="uw-stat-value">{dist.max?.toFixed(3) || 'N/A'}</span>
+                    </div>
+                    <div className="uw-stat">
+                      <span className="uw-stat-label">Mean:</span>
+                      <span className="uw-stat-value">{dist.mean?.toFixed(3) || 'N/A'}</span>
+                    </div>
+                    <div className="uw-stat">
+                      <span className="uw-stat-label">Std:</span>
+                      <span className="uw-stat-value">{dist.std?.toFixed(3) || 'N/A'}</span>
+                    </div>
+                  </div>
+                  
+                  {/* Simple histogram visualization */}
+                  <div className="uw-parameter-histogram">
+                    <div className="uw-histogram-bar" style={{ height: '60%' }}></div>
+                    <div className="uw-histogram-bar" style={{ height: '80%' }}></div>
+                    <div className="uw-histogram-bar" style={{ height: '40%' }}></div>
+                    <div className="uw-histogram-bar" style={{ height: '90%' }}></div>
+                    <div className="uw-histogram-bar" style={{ height: '70%' }}></div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Recommendations */}
+        {diversityData.recommendations && diversityData.recommendations.length > 0 && (
+          <div className="uw-recommendations-section">
+            <h3 className="uw-section-title">Recommendations</h3>
+            <div className="uw-recommendations-list">
+              {diversityData.recommendations.map((rec, index) => (
+                <div key={index} className={`uw-recommendation ${rec.priority || 'medium'}`}>
+                  <div className="uw-recommendation-header">
+                    <span className="uw-rec-title">{rec.title}</span>
+                    <span className={`uw-rec-priority ${rec.priority}`}>
+                      {rec.priority?.toUpperCase()}
+                    </span>
+                  </div>
+                  <p className="uw-rec-description">{rec.description}</p>
+                  {rec.action && (
+                    <button className="uw-btn uw-btn-small uw-btn-primary">
+                      {rec.action}
+                    </button>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  };
+
+  const renderTrends = () => {
+    if (!trendsData) {
+      return (
+        <div className="uw-trends-empty">
+          <p>No trend data available for the selected time range</p>
+        </div>
+      );
+    }
+
+    return (
+      <div className="uw-trends-content">
+        {/* Trend Charts */}
+        <div className="uw-trend-charts">
+          <div className="uw-chart-container">
+            <h3 className="uw-chart-title">Diversity Score Over Time</h3>
+            <div className="uw-chart-placeholder">
+              <div className="uw-chart-line">
+                {/* Simple line chart representation */}
+                <svg width="100%" height="200" viewBox="0 0 600 200">
+                  <polyline
+                    points="0,150 100,120 200,140 300,100 400,110 500,90 600,95"
+                    fill="none"
+                    stroke="var(--accent-color)"
+                    strokeWidth="2"
+                  />
+                </svg>
+              </div>
+            </div>
+          </div>
+
+          <div className="uw-chart-container">
+            <h3 className="uw-chart-title">Generation Rate</h3>
+            <div className="uw-chart-placeholder">
+              <div className="uw-chart-bar">
+                {/* Simple bar chart representation */}
+                <svg width="100%" height="200" viewBox="0 0 600 200">
+                  <rect x="50" y="140" width="40" height="40" fill="var(--accent-color)" />
+                  <rect x="150" y="120" width="40" height="60" fill="var(--accent-color)" />
+                  <rect x="250" y="80" width="40" height="100" fill="var(--accent-color)" />
+                  <rect x="350" y="100" width="40" height="80" fill="var(--accent-color)" />
+                  <rect x="450" y="90" width="40" height="90" fill="var(--accent-color)" />
+                </svg>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Trend Insights */}
+        {trendsData.insights && (
+          <div className="uw-trend-insights">
+            <h3 className="uw-section-title">Trend Insights</h3>
+            <div className="uw-insights-list">
+              {trendsData.insights.map((insight, index) => (
+                <div key={index} className="uw-insight">
+                  <div className="uw-insight-icon">
+                    {insight.type === 'increase' ? '↗️' : insight.type === 'decrease' ? '↘️' : '➡️'}
+                  </div>
+                  <div className="uw-insight-content">
+                    <h4 className="uw-insight-title">{insight.title}</h4>
+                    <p className="uw-insight-description">{insight.description}</p>
+                    <span className="uw-insight-timeframe">{insight.timeframe}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  };
+
+  const renderAnalysis = () => {
+    return (
+      <div className="uw-analysis-content">
+        <div className="uw-analysis-controls">
+          <button
+            className="uw-btn uw-btn-primary"
+            onClick={loadClusterAnalysis}
+            disabled={!selectedType || loading}
+          >
+            {loading ? 'Analyzing...' : 'Run Cluster Analysis'}
+          </button>
+        </div>
+
+        {analysisData && (
+          <div className="uw-cluster-analysis">
+            <div className="uw-analysis-section">
+              <h3 className="uw-section-title">Cluster Overview</h3>
+              <div className="uw-cluster-grid">
+                {analysisData.clusters?.map((cluster, index) => (
+                  <div key={index} className="uw-cluster-card">
+                    <h4 className="uw-cluster-title">Cluster {cluster.id}</h4>
+                    <div className="uw-cluster-stats">
+                      <div className="uw-cluster-stat">
+                        <span className="uw-stat-label">Size:</span>
+                        <span className="uw-stat-value">{cluster.size}</span>
+                      </div>
+                      <div className="uw-cluster-stat">
+                        <span className="uw-stat-label">Diversity:</span>
+                        <span className="uw-stat-value">
+                          {cluster.diversity_score?.toFixed(3) || 'N/A'}
+                        </span>
+                      </div>
+                    </div>
+                    <div className="uw-cluster-description">
+                      {cluster.description}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="uw-analysis-section">
+              <h3 className="uw-section-title">Parameter Correlations</h3>
+              <div className="uw-correlation-matrix">
+                {/* Simple correlation visualization */}
+                <div className="uw-correlation-grid">
+                  <div className="uw-correlation-item positive">complexity ↔ mysticism_level</div>
+                  <div className="uw-correlation-item negative">size ↔ ink_density</div>
+                  <div className="uw-correlation-item neutral">precision ↔ randomness</div>
+                  <div className="uw-correlation-item positive">mysticism_level ↔ complexity</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {!analysisData && (
+          <div className="uw-analysis-placeholder">
+            <p>Run cluster analysis to view detailed parameter relationships and asset groupings</p>
+          </div>
+        )}
+      </div>
+    );
+  };
+
+  const renderReports = () => {
+    return (
+      <div className="uw-reports-content">
+        <div className="uw-report-options">
+          <h3 className="uw-section-title">Export Reports</h3>
+          
+          <div className="uw-export-form">
+            <div className="uw-form-group">
+              <label className="uw-label">Report Type</label>
+              <select className="uw-select">
+                <option value="diversity">Diversity Analysis Report</option>
+                <option value="trends">Trend Analysis Report</option>
+                <option value="cluster">Cluster Analysis Report</option>
+                <option value="full">Complete Analysis Report</option>
+              </select>
+            </div>
+
+            <div className="uw-form-group">
+              <label className="uw-label">Format</label>
+              <select className="uw-select">
+                <option value="json">JSON</option>
+                <option value="csv">CSV</option>
+                <option value="pdf">PDF</option>
+                <option value="html">HTML</option>
+              </select>
+            </div>
+
+            <div className="uw-form-group">
+              <label className="uw-label">Time Range</label>
+              <select 
+                className="uw-select"
+                value={timeRange}
+                onChange={(e) => setTimeRange(e.target.value)}
+              >
+                <option value="1h">Last Hour</option>
+                <option value="24h">Last 24 Hours</option>
+                <option value="7d">Last 7 Days</option>
+                <option value="30d">Last 30 Days</option>
+                <option value="all">All Time</option>
+              </select>
+            </div>
+          </div>
+
+          <div className="uw-export-actions">
+            <button
+              className="uw-btn uw-btn-primary"
+              onClick={() => handleExportReport('json')}
+              disabled={!selectedType}
+            >
+              Export Report
+            </button>
+            
+            <button
+              className="uw-btn uw-btn-secondary"
+              onClick={() => setExportDialogOpen(true)}
+            >
+              Custom Export
+            </button>
+          </div>
+        </div>
+
+        {/* Recent Reports */}
+        <div className="uw-recent-reports">
+          <h3 className="uw-section-title">Recent Reports</h3>
+          <div className="uw-reports-list">
+            {/* Placeholder for recent reports */}
+            <div className="uw-report-item">
+              <div className="uw-report-info">
+                <h4 className="uw-report-title">Diversity Analysis - parchment_v1</h4>
+                <span className="uw-report-date">Generated 2 hours ago</span>
+              </div>
+              <div className="uw-report-actions">
+                <button className="uw-btn uw-btn-small">Download</button>
+                <button className="uw-btn uw-btn-small uw-btn-secondary">View</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  return (
+    <div className={`uw-diversity-dashboard ${theme} ${className}`} {...props}>
+      {/* Dashboard Header */}
+      <div className="uw-dashboard-header">
+        <div className="uw-header-left">
+          <h2 className="uw-dashboard-title">Diversity Dashboard</h2>
+          <span className="uw-time-range">
+            {getTimeRangeLabel(timeRange)}
+          </span>
+        </div>
+
+        <div className="uw-header-right">
+          {/* Time Range Selector */}
+          <select
+            className="uw-select uw-time-select"
+            value={timeRange}
+            onChange={(e) => setTimeRange(e.target.value)}
+          >
+            <option value="1h">Last Hour</option>
+            <option value="24h">Last 24 Hours</option>
+            <option value="7d">Last 7 Days</option>
+            <option value="30d">Last 30 Days</option>
+            <option value="all">All Time</option>
+          </select>
+
+          {/* Element Type Selector */}
+          <select
+            className="uw-select"
+            value={selectedType?.id || ''}
+            onChange={(e) => {
+              const type = elementTypes.find(t => t.id === e.target.value);
+              setSelectedType(type || null);
+              if (type) onTypeSelect(type);
+            }}
+          >
+            <option value="">Select Element Type</option>
+            {elementTypes.map(type => (
+              <option key={type.id} value={type.id}>
+                {type.name}
+              </option>
+            ))}
+          </select>
+
+          {/* Real-time Toggle */}
+          <label className="uw-toggle-switch">
+            <input
+              type="checkbox"
+              checked={realTimeEnabled}
+              onChange={(e) => setRealTimeEnabled(e.target.checked)}
+            />
+            <span className="uw-toggle-slider"></span>
+            Real-time
+          </label>
+        </div>
+      </div>
+
+      {/* Error Display */}
+      {error && (
+        <div className="uw-error-banner" role="alert">
+          <p>Error: {error}</p>
+          <button 
+            className="uw-btn uw-btn-small" 
+            onClick={() => setError(null)}
+          >
+            Dismiss
+          </button>
+        </div>
+      )}
+
+      {/* Tab Navigation */}
+      <div className="uw-tab-navigation">
+        <button
+          className={`uw-tab ${activeTab === 'overview' ? 'active' : ''}`}
+          onClick={() => setActiveTab('overview')}
+        >
+          Overview
+        </button>
+        <button
+          className={`uw-tab ${activeTab === 'trends' ? 'active' : ''}`}
+          onClick={() => setActiveTab('trends')}
+        >
+          Trends
+        </button>
+        <button
+          className={`uw-tab ${activeTab === 'analysis' ? 'active' : ''}`}
+          onClick={() => setActiveTab('analysis')}
+        >
+          Analysis
+        </button>
+        <button
+          className={`uw-tab ${activeTab === 'reports' ? 'active' : ''}`}
+          onClick={() => setActiveTab('reports')}
+        >
+          Reports
+        </button>
+      </div>
+
+      {/* Tab Content */}
+      <div className="uw-dashboard-content">
+        {loading ? (
+          <div className="uw-loading-state">
+            <div className="uw-spinner"></div>
+            <p>Loading diversity data...</p>
+          </div>
+        ) : (
+          <>
+            {activeTab === 'overview' && renderOverview()}
+            {activeTab === 'trends' && renderTrends()}
+            {activeTab === 'analysis' && renderAnalysis()}
+            {activeTab === 'reports' && renderReports()}
+          </>
+        )}
+      </div>
+    </div>
+  );
+};
+
+// PropTypes definition
+DiversityDashboard.propTypes = {
+  elementTypes: PropTypes.array,
+  onTypeSelect: PropTypes.func,
+  theme: PropTypes.oneOf(['default', 'dark', 'minimal', 'chaotic']),
+  initialFilters: PropTypes.object,
+  className: PropTypes.string
+};
+
+export default DiversityDashboard;

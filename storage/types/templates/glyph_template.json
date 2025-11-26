@@ -1,0 +1,195 @@
+{
+  "id": "glyph_template",
+  "name": "Glyph Template",
+  "description": "Template for creating symbol/glyph types with customizable geometric complexity and styling",
+  "category": "glyphs",
+  "tags": ["symbol", "glyph", "geometric", "ink", "template"],
+  "render_strategy": {
+    "engine": "pil",
+    "generator_name": "sigil"
+  },
+  "param_schema": {
+    "type": "object",
+    "title": "Glyph Parameters",
+    "description": "Configuration for glyph generation",
+    "properties": {
+      "complexity": {
+        "type": "integer",
+        "minimum": 1,
+        "maximum": 10,
+        "default": 5,
+        "description": "Geometric complexity of the symbol (1=simple, 10=complex)"
+      },
+      "ink_density": {
+        "type": "float",
+        "minimum": 0.1,
+        "maximum": 1.0,
+        "default": 0.8,
+        "description": "Thickness of symbol lines"
+      },
+      "symbol_size": {
+        "type": "integer",
+        "minimum": 64,
+        "maximum": 512,
+        "default": 256,
+        "description": "Size of the symbol in pixels"
+      },
+      "mysticism_level": {
+        "type": "float",
+        "minimum": 0.0,
+        "maximum": 1.0,
+        "default": 0.7,
+        "description": "Intensity of mystical properties"
+      },
+      "geometric_precision": {
+        "type": "float",
+        "minimum": 0.0,
+        "maximum": 1.0,
+        "default": 0.6,
+        "description": "Precision of geometric shapes"
+      },
+      "base_color": {
+        "type": "string",
+        "pattern": "^#[0-9A-Fa-f]{6}$",
+        "default": "#000000",
+        "description": "Base color of the glyph in hex format"
+      }
+    },
+    "required": ["complexity", "ink_density", "symbol_size"]
+  },
+  "examples": [
+    {
+      "name": "Ancient Rune",
+      "description": "Traditional runic symbol with high complexity",
+      "tags": ["rune", "ancient", "mystical"],
+      "complexity": 8,
+      "mysticism_level": 0.9,
+      "geometric_precision": 0.9
+    },
+    {
+      "name": "Simple Mark",
+      "description": "Minimalist symbol for clean interfaces",
+      "tags": ["simple", "minimal", "clean"],
+      "complexity": 3,
+      "mysticism_level": 0.3,
+      "geometric_precision": 0.4
+    }
+  ],
+  "version": "1.0.0",
+  "usage_notes": [
+    "Use complexity 1-3 for simple symbols",
+    "Use complexity 7-10 for detailed mystical symbols",
+    "High mysticism_level creates more ornate patterns",
+    "Ink_density affects line weight and darkness"
+  ],
+  "diversity_config": {
+    "strategy": "parameter_sampling",
+    "parameter_sampling": {
+      "distributions": {
+        "complexity": {
+          "type": "triangular",
+          "params": {
+            "min": 1,
+            "mode": 6,
+            "max": 10
+          }
+        },
+        "ink_density": {
+          "type": "normal",
+          "params": {
+            "mean": 0.8,
+            "std": 0.2
+          }
+        },
+        "symbol_size": {
+          "type": "uniform",
+          "params": {
+            "min": 128,
+            "max": 384
+          }
+        },
+        "mysticism_level": {
+          "type": "normal",
+          "params": {
+            "mean": 0.7,
+            "std": 0.25
+          }
+        },
+        "geometric_precision": {
+          "type": "uniform",
+          "params": {
+            "min": 0.3,
+            "max": 0.9
+          }
+        }
+      }
+    },
+    "target_diversity_score": 0.8,
+    "diversity_weights": {
+      "complexity": 0.3,
+      "ink_density": 0.2,
+      "symbol_size": 0.15,
+      "mysticism_level": 0.25,
+      "geometric_precision": 0.1
+    },
+    "sampling_strategy": "latin_hypercube",
+    "constraints": [
+      "complexity >= mysticism_level * 2",
+      "geometric_precision >= ink_density * 0.5",
+      "symbol_size >= complexity * 20"
+    ],
+    "max_variations": 200
+  },
+  "diversity_examples": [
+    {
+      "name": "High Diversity Configuration",
+      "description": "Maximum variation for experimental glyphs",
+      "strategy": "compositional",
+      "target_diversity_score": 0.9,
+      "sampling_strategy": "sobol",
+      "diversity_weights": {
+        "complexity": 0.4,
+        "mysticism_level": 0.3,
+        "ink_density": 0.2,
+        "symbol_size": 0.1
+      }
+    },
+    {
+      "name": "Balanced Configuration",
+      "description": "Moderate variation for general use",
+      "strategy": "parameter_sampling",
+      "target_diversity_score": 0.7,
+      "sampling_strategy": "latin_hypercube",
+      "diversity_weights": {
+        "complexity": 0.25,
+        "ink_density": 0.25,
+        "symbol_size": 0.2,
+        "mysticism_level": 0.2,
+        "geometric_precision": 0.1
+      }
+    },
+    {
+      "name": "Color Focus Configuration",
+      "description": "Emphasizes color and ink density variation",
+      "strategy": "jitter",
+      "target_diversity_score": 0.6,
+      "sampling_strategy": "random",
+      "diversity_weights": {
+        "base_color": 0.4,
+        "ink_density": 0.3,
+        "complexity": 0.2,
+        "mysticism_level": 0.1
+      },
+      "jitter": {
+        "jitter_amount": 0.15,
+        "affected_parameters": ["ink_density", "base_color", "mysticism_level"]
+      }
+    }
+  ],
+  "sampling_recommendations": {
+    "latin_hypercube": "Best for even parameter space coverage",
+    "sobol": "Excellent for deterministic batch generation",
+    "halton": "Good for categorical parameter combinations",
+    "random": "Simple fallback for basic variation"
+  }
+}

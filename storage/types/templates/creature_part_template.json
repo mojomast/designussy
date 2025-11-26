@@ -1,0 +1,85 @@
+{
+  "id": "creature_part_template",
+  "name": "Creature Part Template",
+  "description": "Template for creating creature components with organic characteristics and customizable features",
+  "category": "creatures",
+  "tags": ["creature", "organic", "part", "component", "template"],
+  "render_strategy": {
+    "engine": "pil",
+    "generator_name": "giraffe"
+  },
+  "param_schema": {
+    "type": "object",
+    "title": "Creature Part Parameters",
+    "description": "Configuration for creature part generation",
+    "properties": {
+      "size": {
+        "type": "integer",
+        "minimum": 64,
+        "maximum": 512,
+        "default": 256,
+        "description": "Overall size of the creature part"
+      },
+      "mood": {
+        "type": "string",
+        "enum": ["aggressive", "calm", "mysterious", "playful", "wise"],
+        "default": "mysterious",
+        "description": "Emotional state affecting appearance"
+      },
+      "species_type": {
+        "type": "string",
+        "enum": ["feline", "reptile", "avian", "mammal", "mystical"],
+        "default": "mystical",
+        "description": "Base species characteristics"
+      },
+      "detail_level": {
+        "type": "float",
+        "minimum": 0.0,
+        "maximum": 1.0,
+        "default": 0.7,
+        "description": "Amount of detail in textures and features"
+      },
+      "color_scheme": {
+        "type": "string",
+        "enum": ["natural", "ethereal", "void", "fire", "earth"],
+        "default": "natural",
+        "description": "Color palette for the creature"
+      },
+      "organic_flow": {
+        "type": "float",
+        "minimum": 0.0,
+        "maximum": 1.0,
+        "default": 0.8,
+        "description": "How organic and flowing the shapes are"
+      }
+    },
+    "required": ["size", "mood", "species_type"]
+  },
+  "examples": [
+    {
+      "name": "Void Tendrils",
+      "description": "Dark, flowing tendrils with void properties",
+      "tags": ["void", "flowing", "dark", "organic"],
+      "mood": "mysterious",
+      "species_type": "mystical",
+      "color_scheme": "void",
+      "organic_flow": 0.9
+    },
+    {
+      "name": "Nature Spirit",
+      "description": "Organic creature parts with natural characteristics",
+      "tags": ["nature", "organic", "green", "earth"],
+      "mood": "calm",
+      "species_type": "mammal",
+      "color_scheme": "earth",
+      "detail_level": 0.8
+    }
+  ],
+  "version": "1.0.0",
+  "usage_notes": [
+    "Use 'void' color_scheme for dark, mystical effects",
+    "Higher detail_level adds more texture and complexity",
+    "Organic_flow controls the fluidity of shapes",
+    "Species_type influences the base form and features"
+  ]
+}

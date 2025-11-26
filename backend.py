@@ -29,6 +29,24 @@ from generate_assets import create_void_parchment, create_ink_enso, create_sigil
 
 # Import new modular generator system
 from generators import get_generator, default_factory, list_generators
+# Import Phase 2 type-aware generation components
+try:
+    from generators.dynamic_loader import DynamicGeneratorLoader
+    from generators.type_batch_generator import TypeBatchGenerator
+    from generators.variation_strategies import VariationEngine
+    HAS_TYPE_AWARE_SYSTEM = True
+except ImportError as e:
+    print(f"⚠️ Type-aware generation system not available: {e}")
+    HAS_TYPE_AWARE_SYSTEM = False
+
+# Import Type System components
+try:
+    from enhanced_design.type_registry import get_type_registry, TypeRegistry
+    from enhanced_design.element_types import ElementType
+    HAS_TYPE_SYSTEM = True
+except ImportError as e:
+    print(f"⚠️ Type system not available: {e}")
+    HAS_TYPE_SYSTEM = False
 
 # Import advanced generation components
 from generators.schemas import GenerationParameters, GenerationRequest, PresetRequest, ParameterValidationResult
@@ -81,6 +99,25 @@ cache = get_cache()
 
 # Initialize job manager
 job_manager = get_job_manager()
+# Initialize type-aware generation system if available
+if HAS_TYPE_AWARE_SYSTEM:
+    type_aware_loader = DynamicGeneratorLoader()
+    type_batch_generator = TypeBatchGenerator()
+    variation_engine = VariationEngine()
+    print("🎯 Type-aware generation system initialized")
+else:
+    type_aware_loader = None
+    type_batch_generator = None
+    variation_engine = None
+    print("📦 Type-aware generation system disabled")
+
+# Initialize type registry if available
+if HAS_TYPE_SYSTEM:
+    type_registry = get_type_registry()
+    print("🔧 Type system initialized")
+else:
+    type_registry = None
+    print("📦 Type system disabled")
 
 # Initialize rate limiter
 limiter = Limiter(key_func=get_remote_address)
@@ -1750,6 +1787,1635 @@ async def export_metadata(
         print(f"❌ Export Metadata Error: {e}")
         raise HTTPException(status_code=500, detail=f"Failed to export metadata: {str(e)}")
 
+
+# ==================== Type System API Endpoints ====================
+
+@app.get("/types")
+async def list_types(
+    category: Optional[str] = Query(None, description="Filter by type category"),
+    search: Optional[str] = Query(None, description="Search in type names and descriptions"),
+    limit: int = Query(50, ge=1, le=100, description="Maximum number of results"),
+    offset: int = Query(0, ge=0, description="Number of results to skip")
+):
+    """
+    List all available element types with optional filtering.
+    
+    Provides comprehensive type discovery with search and pagination.
+    """
+    if not HAS_TYPE_SYSTEM or not type_registry:
+        raise HTTPException(status_code=503, detail="Type system disabled")
+    
+    try:
+        # Get tags from query parameter
+        tags = None
+        if search:
+            # Simple search implementation
+            pass
+        
+        # List types from registry
+        types = type_registry.list(
+            category=category,
+            search=search,
+            limit=limit,
+            offset=offset
+        )
+        
+        # Convert to response format
+        types_data = []
+        for element_type in types:
+            types_data.append({
+                "id": element_type.id,
+                "name": element_type.name,
+                "description": element_type.description,
+                "category": element_type.category,
+                "tags": element_type.tags,
+                "version": element_type.version,
+                "created_at": element_type.created_at.isoformat() + "Z",
+                "usage_count": element_type.usage_count,
+                "variants_count": len(element_type.variants),
+                "has_diversity_config": element_type.diversity_config is not None
+            })
+        
+        return {
+            "status": "success",
+            "types": types_data,
+            "total_count": len(types_data),
+            "category_filter": category,
+            "search_query": search,
+            "limit": limit,
+            "offset": offset,
+            "timestamp": datetime.utcnow().isoformat() + "Z"
+        }
+        
+    except Exception as e:
+        print(f"❌ List Types Error: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to list types: {str(e)}")
+
+
+@app.get("/types/{type_id}")
+async def get_type(type_id: str):
+    """
+    Get detailed information about a specific element type.
+    
+    Returns comprehensive type information including variants,
+    diversity configuration, and parameter schema.
+    """
+    if not HAS_TYPE_SYSTEM or not type_registry:
+        raise HTTPException(status_code=503, detail="Type system disabled")
+    
+    try:
+        # Get type from registry
+        element_type = type_registry.get(type_id)
+        if not element_type:
+            raise HTTPException(status_code=404, detail=f"Type '{type_id}' not found")
+        
+        # Convert to response format
+        type_data = {
+            "id": element_type.id,
+            "name": element_type.name,
+            "description": element_type.description,
+            "category": element_type.category,
+            "tags": element_type.tags,
+            "version": element_type.version,
+            "created_by": element_type.created_by,
+            "created_at": element_type.created_at.isoformat() + "Z",
+            "updated_at": element_type.updated_at.isoformat() + "Z" if element_type.updated_at else None,
+            "usage_count": element_type.usage_count,
+            "is_active": element_type.is_active,
+            "is_template": element_type.is_template,
+            "render_strategy": {
+                "engine": element_type.render_strategy.engine,
+                "generator_name": element_type.render_strategy.generator_name
+            },
+            "param_schema": element_type.param_schema,
+            "variants": [
+                {
+                    "variant_id": v.variant_id,
+                    "name": v.name,
+                    "description": v.description,
+                    "parameters": v.parameters,
+                    "weight": v.weight
+                }
+                for v in element_type.variants
+            ],
+            "diversity_config": element_type.diversity_config.dict() if element_type.diversity_config else None,
+            "default_params": element_type.get_default_params(),
+            "search_text": element_type.get_search_text()
+        }
+        
+        return {
+            "status": "success",
+            "type": type_data,
+            "timestamp": datetime.utcnow().isoformat() + "Z"
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"❌ Get Type Error: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to get type: {str(e)}")
+
+
+@app.post("/types")
+async def create_type(type_data: dict):
+    """
+    Create a new element type.
+    
+    Validates the type data and adds it to the registry.
+    """
+    if not HAS_TYPE_SYSTEM or not type_registry:
+        raise HTTPException(status_code=503, detail="Type system disabled")
+    
+    try:
+        # Create ElementType from data
+        element_type = ElementType(**type_data)
+        
+        # Add to registry
+        success = type_registry.add(element_type)
+        if not success:
+            raise HTTPException(status_code=400, detail="Failed to create type (may already exist)")
+        
+        return {
+            "status": "success",
+            "type_id": element_type.id,
+            "message": "Type created successfully",
+            "timestamp": datetime.utcnow().isoformat() + "Z"
+        }
+        
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=f"Invalid type data: {str(e)}")
+    except Exception as e:
+        print(f"❌ Create Type Error: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to create type: {str(e)}")
+
+
+@app.put("/types/{type_id}")
+async def update_type(type_id: str, type_data: dict):
+    """
+    Update an existing element type.
+    
+    Updates type information in the registry.
+    """
+    if not HAS_TYPE_SYSTEM or not type_registry:
+        raise HTTPException(status_code=503, detail="Type system disabled")
+    
+    try:
+        # Add type_id to data
+        type_data['id'] = type_id
+        
+        # Create ElementType from data
+        element_type = ElementType(**type_data)
+        
+        # Update in registry
+        success = type_registry.update(element_type)
+        if not success:
+            raise HTTPException(status_code=404, detail=f"Type '{type_id}' not found")
+        
+        return {
+            "status": "success",
+            "type_id": type_id,
+            "message": "Type updated successfully",
+            "timestamp": datetime.utcnow().isoformat() + "Z"
+        }
+        
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=f"Invalid type data: {str(e)}")
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"❌ Update Type Error: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to update type: {str(e)}")
+
+
+@app.delete("/types/{type_id}")
+async def delete_type(type_id: str, soft_delete: bool = Query(True, description="Whether to use soft delete")):
+    """
+    Delete an element type from the registry.
+    
+    Performs soft delete by default, can be made permanent.
+    """
+    if not HAS_TYPE_SYSTEM or not type_registry:
+        raise HTTPException(status_code=503, detail="Type system disabled")
+    
+    try:
+        # Delete from registry
+        success = type_registry.delete(type_id, soft_delete=soft_delete)
+        if not success:
+            raise HTTPException(status_code=404, detail=f"Type '{type_id}' not found")
+        
+        return {
+            "status": "success",
+            "type_id": type_id,
+            "deleted_permanently": not soft_delete,
+            "message": "Type deleted successfully",
+            "timestamp": datetime.utcnow().isoformat() + "Z"
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"❌ Delete Type Error: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to delete type: {str(e)}")
+
+
+@app.get("/types/categories")
+async def get_type_categories():
+    """
+    Get all available type categories.
+    
+    Returns list of categories with type counts.
+    """
+    if not HAS_TYPE_SYSTEM or not type_registry:
+        raise HTTPException(status_code=503, detail="Type system disabled")
+    
+    try:
+        categories = type_registry.get_categories()
+        
+        return {
+            "status": "success",
+            "categories": categories,
+            "total_count": len(categories),
+            "timestamp": datetime.utcnow().isoformat() + "Z"
+        }
+        
+    except Exception as e:
+        print(f"❌ Get Categories Error: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to get categories: {str(e)}")
+
+
+@app.get("/types/tags")
+async def get_type_tags(limit: int = Query(50, ge=1, le=200, description="Maximum number of tags")):
+    """
+    Get all available type tags.
+    
+    Returns list of unique tags used across all types.
+    """
+    if not HAS_TYPE_SYSTEM or not type_registry:
+        raise HTTPException(status_code=503, detail="Type system disabled")
+    
+    try:
+        tags = type_registry.get_tags(limit=limit)
+        
+        return {
+            "status": "success",
+            "tags": tags,
+            "total_count": len(tags),
+            "timestamp": datetime.utcnow().isoformat() + "Z"
+        }
+        
+    except Exception as e:
+        print(f"❌ Get Tags Error: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to get tags: {str(e)}")
+
+@app.get("/types/stats")
+async def get_type_stats():
+    """
+    Get comprehensive type system statistics.
+    
+    Returns system-wide statistics including type counts, categories, and usage.
+    """
+    if not HAS_TYPE_SYSTEM or not type_registry:
+        raise HTTPException(status_code=503, detail="Type system disabled")
+    
+    try:
+        stats = type_registry.get_statistics()
+        usage_stats = type_registry.get_usage_stats()
+        
+        return {
+            "status": "success",
+            "statistics": stats,
+            "usage": usage_stats,
+            "timestamp": datetime.utcnow().isoformat() + "Z"
+        }
+        
+    except Exception as e:
+        print(f"❌ Type Stats Error: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to get type stats: {str(e)}")
+
+
+# ==================== Type-Based Generation Endpoints ====================
+
+@app.post("/generate/from-type")
+async def generate_from_type(request_data: dict):
+    """
+    Generate asset from ElementType definition with optional variations.
+    
+    Body: {
+        "type_id": "string",           # ElementType ID
+        "params": { ... },             # Optional parameter overrides
+        "variations": { ... },         # Optional diversity configuration
+        "seed": 123                    # Optional seed for reproducible results
+    }
+    
+    Returns:
+        PNG image of the generated asset
+    """
+    if not HAS_TYPE_AWARE_SYSTEM or not type_aware_loader:
+        raise HTTPException(status_code=503, detail="Type-aware generation system disabled")
+    
+    try:
+        type_id = request_data.get('type_id')
+        if not type_id:
+            raise HTTPException(status_code=400, detail="type_id is required")
+        
+        # Get parameter overrides and variations
+        params = request_data.get('params', {})
+        variations = request_data.get('variations')
+        seed = request_data.get('seed')
+        
+        # Create generator from type
+        generator = type_aware_loader.create_generator_from_type_id(
+            type_id=type_id,
+            parameter_overrides=params,
+            diversity_config=variations,
+            seed=seed
+        )
+        
+        if generator is None:
+            available_types = type_aware_loader.get_supported_types()
+            raise HTTPException(
+                status_code=400,
+                detail=f"Type '{type_id}' not found or not supported. Available: {available_types}"
+            )
+        
+        # Generate the asset
+        img = generator.generate(**params)
+        
+        print(f"✨ Generated asset from type {type_id} using type-aware system")
+        return serve_pil_image(img)
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"❌ Type-based Generation Error: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to generate from type: {str(e)}")
+
+
+@app.get("/generate/types")
+async def list_generatable_types():
+    """
+    Get list of ElementTypes that can be used for generation.
+    
+    Returns:
+        List of supported type IDs and their basic information
+    """
+    if not HAS_TYPE_AWARE_SYSTEM or not type_aware_loader:
+        raise HTTPException(status_code=503, detail="Type-aware generation system disabled")
+    
+    try:
+        supported_types = type_aware_loader.get_supported_types()
+        
+        # Get detailed info for each type
+        types_info = []
+        for type_id in supported_types:
+            type_info = type_aware_loader.get_type_info(type_id)
+            if type_info:
+                types_info.append({
+                    "id": type_id,
+                    "name": type_info.get('type_name', type_id),
+                    "category": type_info.get('category'),
+                    "description": type_info.get('description'),
+                    "generator_name": type_info.get('generator_name'),
+                    "supported": type_info.get('supported', False),
+                    "has_variants": type_info.get('has_variants', False),
+                    "has_diversity": type_info.get('has_diversity', False)
+                })
+        
+        return {
+            "status": "success",
+            "types": types_info,
+            "total_count": len(types_info),
+            "timestamp": datetime.utcnow().isoformat() + "Z"
+        }
+        
+    except Exception as e:
+        print(f"❌ List Generatable Types Error: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to list generatable types: {str(e)}")
+
+
+@app.post("/generate/type-batch")
+async def generate_type_batch(request_data: dict, background_tasks: BackgroundTasks):
+    """
+    Generate multiple variations from ElementType definitions.
+    
+    Body: {
+        "type_ids": ["type1", "type2"],        # List of ElementType IDs
+        "count_per_type": 5,                   # Number of variations per type
+        "parameter_overrides": {               # Optional parameter overrides per type
+            "type1": { "width": 512 },
+            "type2": { "color": "#ff0000" }
+        },
+        "seeds": {                             # Optional seeds per type
+            "type1": 123,
+            "type2": 456
+        },
+        "output_format": "image"               # "image", "metadata", or "both"
+    }
+    
+    Returns:
+        Batch job ID for tracking progress
+    """
+    if not HAS_TYPE_AWARE_SYSTEM or not type_batch_generator:
+        raise HTTPException(status_code=503, detail="Type-aware generation system disabled")
+    
+    try:
+        type_ids = request_data.get('type_ids', [])
+        count_per_type = request_data.get('count_per_type', 5)
+        parameter_overrides = request_data.get('parameter_overrides', {})
+        seeds = request_data.get('seeds', {})
+        output_format = request_data.get('output_format', 'image')
+        
+        if not type_ids:
+            raise HTTPException(status_code=400, detail="type_ids cannot be empty")
+        
+        # Create batch job
+        batch_id = type_batch_generator.generate_batch_from_types(
+            type_ids=type_ids,
+            count_per_type=count_per_type,
+            parameter_overrides=parameter_overrides,
+            seeds=seeds,
+            output_format=output_format
+        )
+        
+        return {
+            "batch_id": batch_id,
+            "status": "created",
+            "total_items": len(type_ids) * count_per_type,
+            "type_ids": type_ids,
+            "count_per_type": count_per_type,
+            "output_format": output_format,
+            "timestamp": datetime.utcnow().isoformat() + "Z"
+        }
+        
+    except Exception as e:
+        print(f"❌ Type Batch Generation Error: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to create type batch: {str(e)}")
+
+
+@app.get("/generate/type-batch/{batch_id}/status")
+async def get_type_batch_status(batch_id: str):
+    """
+    Get status of a type-based batch generation job.
+    
+    Args:
+        batch_id: Batch job ID
+        
+    Returns:
+        Current batch status and progress
+    """
+    if not HAS_TYPE_AWARE_SYSTEM or not type_batch_generator:
+        raise HTTPException(status_code=503, detail="Type-aware generation system disabled")
+    
+    try:
+        status_info = type_batch_generator.get_batch_status(batch_id)
+        if not status_info:
+            raise HTTPException(status_code=404, detail="Batch job not found")
+        
+        return {
+            "status": "success",
+            "batch_status": status_info,
+            "timestamp": datetime.utcnow().isoformat() + "Z"
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"❌ Type Batch Status Error: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to get batch status: {str(e)}")
+
+
+@app.get("/generate/type-batch/{batch_id}/results")
+async def get_type_batch_results(batch_id: str):
+    """
+    Get results from a completed type-based batch generation job.
+    
+    Args:
+        batch_id: Batch job ID
+        
+    Returns:
+        List of generation results
+    """
+    if not HAS_TYPE_AWARE_SYSTEM or not type_batch_generator:
+        raise HTTPException(status_code=503, detail="Type-aware generation system disabled")
+    
+    try:
+        results = type_batch_generator.get_batch_results(batch_id)
+        if results is None:
+            raise HTTPException(status_code=404, detail="Batch job not found or not completed")
+        
+        return {
+            "status": "success",
+            "batch_id": batch_id,
+            "results_count": len(results),
+            "results": results,
+            "timestamp": datetime.utcnow().isoformat() + "Z"
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"❌ Type Batch Results Error: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to get batch results: {str(e)}")
+
+
+@app.get("/generate/variation-strategies")
+async def get_variation_strategies():
+    """
+    Get available variation strategies for type-based generation.
+    
+    Returns:
+        List of available variation strategies and their descriptions
+    """
+    if not HAS_TYPE_AWARE_SYSTEM or not variation_engine:
+        raise HTTPException(status_code=503, detail="Type-aware generation system disabled")
+    
+    try:
+        strategies = variation_engine.get_available_strategies()
+        strategy_info = {}
+        
+        for strategy_name in strategies:
+            info = variation_engine.get_strategy_info(strategy_name)
+            if info:
+                strategy_info[strategy_name] = info
+        
+        return {
+            "status": "success",
+            "strategies": strategy_info,
+            "total_count": len(strategies),
+            "timestamp": datetime.utcnow().isoformat() + "Z"
+        }
+        
+    except Exception as e:
+        print(f"❌ Variation Strategies Error: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to get variation strategies: {str(e)}")
+
+
+@app.get("/generate/type-stats")
+async def get_type_generation_stats():
+    """
+    Get comprehensive statistics about type-based generation system.
+    
+    Returns:
+        System statistics including types, generators, and batch processing
+    """
+    if not HAS_TYPE_AWARE_SYSTEM:
+        raise HTTPException(status_code=503, detail="Type-aware generation system disabled")
+    
+    try:
+        stats = {
+            "type_aware_system": {
+                "available": HAS_TYPE_AWARE_SYSTEM,
+                "supported_types": len(type_aware_loader.get_supported_types()) if type_aware_loader else 0,
+                "loader_stats": type_aware_loader.get_statistics() if type_aware_loader else {}
+            },
+            "batch_system": {
+                "available": type_batch_generator is not None,
+                "batch_stats": type_batch_generator.get_statistics() if type_batch_generator else {}
+            },
+            "variation_system": {
+                "available": variation_engine is not None,
+                "strategies": variation_engine.get_available_strategies() if variation_engine else []
+            },
+            "timestamp": datetime.utcnow().isoformat() + "Z"
+        }
+        
+        return {
+            "status": "success",
+            "statistics": stats,
+            "timestamp": datetime.utcnow().isoformat() + "Z"
+        }
+        
+    except Exception as e:
+        print(f"❌ Type Generation Stats Error: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to get type generation stats: {str(e)}")
+
+
+
+# ==================== LLM Type Creation Endpoints ====================
+
+@app.post("/llm/create-type")
+async def create_type_from_llm(
+    request_data: dict,
+    api_key_header: str | None = Header(default=None, alias="X-API-Key"),
+    base_url_header: str | None = Header(default=None, alias="X-Base-Url"),
+    model: str = Query("gpt-4o-2024-08-06", description="LLM model to use")
+):
+    """
+    Create a new ElementType from natural language description using LLM.
+    
+    Body: {
+        "description": "A mystical glyph with ancient symbols and glowing properties",
+        "context": { ... }  # Optional context information
+    }
+    
+    Headers:
+        X-API-Key: API key for LLM service
+        X-Base-Url: Optional base URL for LLM API
+    """
+    try:
+        # Import LLM functions
+        from llm_director import create_element_type_from_prompt
+        
+        description = request_data.get('description', '').strip()
+        if not description:
+            raise HTTPException(status_code=400, detail="Description is required")
+        
+        if len(description) > 1000:
+            raise HTTPException(status_code=400, detail="Description too long (max 1000 characters)")
+        
+        context = request_data.get('context', {})
+        
+        # Get API key
+        api_key = api_key_header or os.environ.get("OPENAI_API_KEY")
+        if not api_key:
+            raise HTTPException(status_code=401, detail="No API key provided. Pass X-API-Key header or configure .env")
+        
+        base_url = base_url_header or os.environ.get("LLM_BASE_URL", "https://router.requesty.ai/v1")
+        
+        # Create type using LLM
+        result = create_element_type_from_prompt(
+            description=description,
+            api_key=api_key,
+            context=context,
+            model=model,
+            base_url=base_url
+        )
+        
+        if result.get('success'):
+            # Try to add to registry if available
+            if HAS_TYPE_SYSTEM and type_registry and 'type_data' in result:
+                try:
+                    from enhanced_design.element_types import ElementType
+                    element_type = ElementType(**result['type_data'])
+                    type_registry.add(element_type)
+                    result['persisted'] = True
+                except Exception as e:
+                    result['persisted'] = False
+                    result['registry_error'] = str(e)
+            
+            return {
+                "status": "success",
+                "type_id": result.get('type_id'),
+                "type_data": result.get('type_data'),
+                "validation_result": result.get('validation_result'),
+                "llm_model": result.get('llm_model'),
+                "persisted": result.get('persisted', False),
+                "timestamp": datetime.utcnow().isoformat() + "Z"
+            }
+        else:
+            raise HTTPException(
+                status_code=500, 
+                detail=f"Type creation failed: {result.get('error', 'Unknown error')}"
+            )
+            
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"❌ LLM Type Creation Error: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to create type: {str(e)}")
+
+
+@app.post("/llm/refine-type/{type_id}")
+async def refine_type_with_llm(
+    type_id: str,
+    request_data: dict,
+    api_key_header: str | None = Header(default=None, alias="X-API-Key"),
+    base_url_header: str | None = Header(default=None, alias="X-Base-Url"),
+    model: str = Query("gpt-4o-2024-08-06", description="LLM model to use")
+):
+    """
+    Refine an existing ElementType based on user feedback using LLM.
+    
+    Body: {
+        "feedback": "Make it more mystical and add parameters for color intensity"
+    }
+    
+    Headers:
+        X-API-Key: API key for LLM service
+        X-Base-Url: Optional base URL for LLM API
+    """
+    try:
+        # Import LLM functions
+        from llm_director import refine_element_type
+        
+        feedback = request_data.get('feedback', '').strip()
+        if not feedback:
+            raise HTTPException(status_code=400, detail="Feedback is required")
+        
+        if len(feedback) > 1000:
+            raise HTTPException(status_code=400, detail="Feedback too long (max 1000 characters)")
+        
+        # Get API key
+        api_key = api_key_header or os.environ.get("OPENAI_API_KEY")
+        if not api_key:
+            raise HTTPException(status_code=401, detail="No API key provided. Pass X-API-Key header or configure .env")
+        
+        base_url = base_url_header or os.environ.get("LLM_BASE_URL", "https://router.requesty.ai/v1")
+        
+        # Check if type exists
+        if HAS_TYPE_SYSTEM and type_registry:
+            existing_type = type_registry.get(type_id)
+            if not existing_type:
+                raise HTTPException(status_code=404, detail=f"Type '{type_id}' not found")
+        
+        # Refine type using LLM
+        result = refine_element_type(
+            type_id=type_id,
+            feedback=feedback,
+            api_key=api_key,
+            model=model,
+            base_url=base_url
+        )
+        
+        if result.get('success'):
+            # Try to update in registry if available
+            updated = False
+            if HAS_TYPE_SYSTEM and type_registry and 'type_data' in result:
+                try:
+                    from enhanced_design.element_types import ElementType
+                    element_type = ElementType(**result['type_data'])
+                    updated = type_registry.update(element_type)
+                except Exception as e:
+                    print(f"⚠️ Failed to update registry: {e}")
+            
+            return {
+                "status": "success",
+                "type_id": result.get('type_id'),
+                "type_data": result.get('type_data'),
+                "validation_result": result.get('validation_result'),
+                "refinement_feedback": feedback,
+                "updated_in_registry": updated,
+                "timestamp": datetime.utcnow().isoformat() + "Z"
+            }
+        else:
+            raise HTTPException(
+                status_code=500, 
+                detail=f"Type refinement failed: {result.get('error', 'Unknown error')}"
+            )
+            
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"❌ LLM Type Refinement Error: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to refine type: {str(e)}")
+
+
+@app.post("/llm/validate-type")
+async def validate_type_with_llm(request_data: dict):
+    """
+    Validate an ElementType definition using the comprehensive validator.
+    
+    Body: {
+        "type_data": { ... }  # ElementType definition to validate
+    }
+    
+    Returns:
+        Detailed validation results with errors, warnings, and suggestions
+    """
+    try:
+        # Import validation functions
+        from llm_director import validate_element_type_schema
+        
+        type_data = request_data.get('type_data')
+        if not type_data:
+            raise HTTPException(status_code=400, detail="type_data is required")
+        
+        # Validate type using validator
+        result = validate_element_type_schema(type_data)
+        
+        return {
+            "status": "success",
+            "validation_result": result,
+            "timestamp": datetime.utcnow().isoformat() + "Z"
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"❌ Type Validation Error: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to validate type: {str(e)}")
+
+
+@app.get("/llm/type-templates")
+async def get_type_templates():
+    """
+    Get available type templates for common categories.
+    
+    Returns:
+        List of template information for glyphs, creatures, backgrounds, effects
+    """
+    try:
+        # Import template functions
+        from llm_director import list_available_templates
+        
+        templates = list_available_templates()
+        
+        return {
+            "status": "success",
+            "templates": templates,
+            "total_count": len(templates),
+            "categories": list(set(t['category'] for t in templates)),
+            "timestamp": datetime.utcnow().isoformat() + "Z"
+        }
+        
+    except Exception as e:
+        print(f"❌ Type Templates Error: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to get templates: {str(e)}")
+
+
+@app.get("/llm/type-examples")
+async def get_type_examples():
+    """
+    Get example ElementType definitions for reference and learning.
+    
+    Returns:
+        List of example type definitions showing best practices
+    """
+    try:
+        # Import example functions
+        from llm_director import get_example_type_definitions
+        
+        examples = get_example_type_definitions()
+        
+        return {
+            "status": "success",
+            "examples": examples,
+            "total_count": len(examples),
+            "categories": list(set(ex.get('category') for ex in examples)),
+            "timestamp": datetime.utcnow().isoformat() + "Z"
+        }
+        
+    except Exception as e:
+        print(f"❌ Type Examples Error: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to get examples: {str(e)}")
+
+
+@app.get("/llm/templates/{template_id}")
+async def get_template_details(template_id: str):
+    """
+    Get detailed information about a specific template.
+    
+    Args:
+        template_id: ID of the template (glyph_template, creature_part_template, etc.)
+        
+    Returns:
+        Complete template definition with parameters and examples
+    """
+    try:
+        # Try to load from file system first
+        template_path = f"storage/types/templates/{template_id}.json"
+        
+        if os.path.exists(template_path):
+            with open(template_path, 'r') as f:
+                template_data = json.load(f)
+            
+            return {
+                "status": "success",
+                "template": template_data,
+                "source": "file_system",
+                "timestamp": datetime.utcnow().isoformat() + "Z"
+            }
+        else:
+            raise HTTPException(status_code=404, detail=f"Template '{template_id}' not found")
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"❌ Template Details Error: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to get template details: {str(e)}")
+
+
+@app.get("/llm/stats")
+async def get_llm_type_creation_stats():
+    """
+    Get comprehensive statistics for LLM type creation system.
+    
+    Returns:
+        System statistics including performance metrics and usage data
+    """
+    try:
+        # Import stats functions
+        from llm_director import get_type_creation_stats
+        
+        # Get LLM director stats
+        llm_stats = get_type_creation_stats()
+        
+        # Get type registry stats if available
+        registry_stats = {}
+        if HAS_TYPE_SYSTEM and type_registry:
+            try:
+                registry_stats = type_registry.get_statistics()
+            except Exception as e:
+                registry_stats = {"error": str(e)}
+        
+        return {
+            "status": "success",
+            "llm_director": llm_stats,
+            "type_registry": registry_stats,
+            "system_capabilities": {
+                "type_creation_enabled": llm_stats.get("type_creation_enabled", False),
+                "type_system_available": HAS_TYPE_SYSTEM,
+                "llm_available": HAS_LLM,
+                "templates_available": True,
+                "improvement_system": True
+            },
+            "timestamp": datetime.utcnow().isoformat() + "Z"
+        }
+        
+    except Exception as e:
+        print(f"❌ LLM Type Creation Stats Error: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to get stats: {str(e)}")
+
+
+# ==================== Type Improvement Endpoints ====================
+
+@app.post("/types/{type_id}/analyze-usage")
+async def analyze_type_usage(type_id: str, days: int = Query(30, description="Number of days to analyze")):
+    """
+    Analyze usage patterns for a specific type.
+    
+    Args:
+        type_id: Type identifier to analyze
+        days: Number of days to analyze (default: 30)
+        
+    Returns:
+        Comprehensive usage analysis with patterns and recommendations
+    """
+    if not HAS_TYPE_SYSTEM or not type_registry:
+        raise HTTPException(status_code=503, detail="Type system disabled")
+    
+    try:
+        # Import Type Improver
+        from llm.type_improver import TypeImprover
+        
+        improver = TypeImprover()
+        analysis = improver.analyze_type_usage(type_id, days)
+        
+        return {
+            "status": "success",
+            "type_id": type_id,
+            "analysis": {
+                "usage_count": analysis.usage_count,
+                "success_rate": analysis.success_rate,
+                "avg_generation_time": analysis.avg_generation_time,
+                "error_rate": analysis.error_rate,
+                "pattern": analysis.pattern.value,
+                "usage_frequency": analysis.usage_frequency,
+                "performance_score": analysis.performance_score,
+                "last_used": analysis.last_used.isoformat() + "Z" if analysis.last_used else None,
+                "recommendations": analysis.get_recommendations()
+            },
+            "analysis_window_days": days,
+            "timestamp": datetime.utcnow().isoformat() + "Z"
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"❌ Type Usage Analysis Error: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to analyze type usage: {str(e)}")
+
+
+@app.post("/types/{type_id}/suggest-improvements")
+async def suggest_type_improvements(
+    type_id: str,
+    analysis_data: dict | None = None,
+    days: int = Query(30, description="Number of days to analyze")
+):
+    """
+    Get improvement suggestions for a type based on usage and best practices.
+    
+    Args:
+        type_id: Type identifier to improve
+        analysis_data: Optional pre-computed usage analysis
+        days: Number of days to analyze if no analysis provided
+        
+    Returns:
+        List of improvement suggestions with priorities and impact estimates
+    """
+    if not HAS_TYPE_SYSTEM or not type_registry:
+        raise HTTPException(status_code=503, detail="Type system disabled")
+    
+    try:
+        # Import Type Improver
+        from llm.type_improver import TypeImprover
+        
+        improver = TypeImprover()
+        
+        # Get analysis if not provided
+        analysis = None
+        if analysis_data:
+            # Convert analysis_data back to UsageAnalysis (simplified)
+            pass
+        else:
+            analysis = improver.analyze_type_usage(type_id, days)
+        
+        # Get suggestions
+        suggestions = improver.suggest_improvements(type_id, analysis)
+        
+        return {
+            "status": "success",
+            "type_id": type_id,
+            "suggestions": [s.to_dict() for s in suggestions],
+            "suggestions_count": len(suggestions),
+            "high_priority_count": len([s for s in suggestions if s.priority >= 8]),
+            "analysis_window_days": days if not analysis_data else None,
+            "timestamp": datetime.utcnow().isoformat() + "Z"
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"❌ Type Improvement Suggestions Error: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to get improvement suggestions: {str(e)}")
+
+
+@app.post("/types/{type_id}/auto-optimize")
+async def auto_optimize_type(type_id: str, max_changes: int = Query(5, description="Maximum changes to apply")):
+    """
+    Automatically apply safe optimizations to a type.
+    
+    Args:
+        type_id: Type identifier to optimize
+        max_changes: Maximum number of changes to apply (default: 5)
+        
+    Returns:
+        Optimized type definition and applied changes
+    """
+    if not HAS_TYPE_SYSTEM or not type_registry:
+        raise HTTPException(status_code=503, detail="Type system disabled")
+    
+    try:
+        # Import Type Improver
+        from llm.type_improver import TypeImprover
+        
+        improver = TypeImprover()
+        optimized_type = improver.auto_optimize_type(type_id, max_changes)
+        
+        # Update in registry
+        updated = type_registry.update(optimized_type)
+        
+        return {
+            "status": "success",
+            "type_id": type_id,
+            "optimized_type": optimized_type.to_dict(),
+            "updated_in_registry": updated,
+            "max_changes_requested": max_changes,
+            "optimization_applied": True,
+            "timestamp": datetime.utcnow().isoformat() + "Z"
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"❌ Type Auto-Optimization Error: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to auto-optimize type: {str(e)}")
+
+
+@app.get("/improvement/metrics")
+async def get_improvement_metrics():
+    """
+    Get comprehensive improvement metrics across all types.
+    
+    Returns:
+        System-wide improvement analytics and recommendations
+    """
+    if not HAS_TYPE_SYSTEM or not type_registry:
+        raise HTTPException(status_code=503, detail="Type system disabled")
+    
+    try:
+        # Import Type Improver
+        from llm.type_improver import TypeImprover
+        
+        improver = TypeImprover()
+        metrics = improver.get_improvement_metrics()
+        
+        return {
+            "status": "success",
+            "metrics": metrics,
+            "timestamp": datetime.utcnow().isoformat() + "Z"
+        }
+        
+    except Exception as e:
+        print(f"❌ Improvement Metrics Error: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to get improvement metrics: {str(e)}")
+
+
+# ==================== Diversity System API Endpoints ====================
+
+try:
+    from utils.diversity_metrics import DiversityMetrics
+    from storage.diversity_tracker import DiversityTracker
+    from utils.diversity_viz import DiversityViz
+    from generators.diversity_optimizer import DiversityOptimizer
+    HAS_DIVERSITY_SYSTEM = True
+except ImportError as e:
+    print(f"⚠️ Diversity system not available: {e}")
+    HAS_DIVERSITY_SYSTEM = False
+
+# Initialize diversity system components if available
+if HAS_DIVERSITY_SYSTEM:
+    diversity_metrics = DiversityMetrics()
+    diversity_tracker = DiversityTracker()
+    diversity_viz = DiversityViz()
+    diversity_optimizer = DiversityOptimizer()
+    print("🔄 Diversity system initialized")
+else:
+    diversity_metrics = diversity_tracker = diversity_viz = diversity_optimizer = None
+    print("📦 Diversity system disabled")
+
+
+@app.post("/diversity/analyze-parameters")
+async def analyze_parameter_diversity(request_data: dict):
+    """
+    Analyze parameter diversity for a set of generation parameters.
+    
+    Body: {
+        "params_list": [
+            {"width": 512, "height": 512, "complexity": 0.7},
+            {"width": 256, "height": 256, "complexity": 0.3}
+        ],
+        "type_id": "optional_type_id"
+    }
+    
+    Returns:
+        Comprehensive diversity analysis with scores and recommendations
+    """
+    if not HAS_DIVERSITY_SYSTEM or not diversity_metrics:
+        raise HTTPException(status_code=503, detail="Diversity system disabled")
+    
+    try:
+        params_list = request_data.get('params_list', [])
+        type_id = request_data.get('type_id')
+        
+        if not params_list:
+            raise HTTPException(status_code=400, detail="params_list cannot be empty")
+        
+        # Analyze parameter diversity
+        diversity_score = diversity_metrics.calculate_parameter_diversity(params_list)
+        
+        # Get detailed analysis
+        analysis = {
+            "diversity_score": diversity_score,
+            "total_parameters": len(params_list),
+            "parameter_count": len(params_list[0].keys()) if params_list else 0,
+            "entropy_breakdown": diversity_metrics.get_entropy_breakdown(params_list),
+            "coverage_analysis": diversity_metrics.analyze_parameter_coverage(params_list)
+        }
+        
+        # Add type-specific analysis if type_id provided
+        if type_id:
+            analysis["type_specific"] = {
+                "type_id": type_id,
+                "expected_score": 0.8,  # Would get from ElementType diversity_config
+                "meets_target": diversity_score >= 0.8,
+                "recommendations": diversity_metrics.get_improvement_recommendations(params_list, target_score=0.8)
+            }
+        
+        return {
+            "status": "success",
+            "analysis": analysis,
+            "timestamp": datetime.utcnow().isoformat() + "Z"
+        }
+        
+    except Exception as e:
+        print(f"❌ Parameter Diversity Analysis Error: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to analyze parameter diversity: {str(e)}")
+
+
+@app.post("/diversity/analyze-outputs")
+async def analyze_output_diversity(request_data: dict):
+    """
+    Analyze output asset diversity for generated assets.
+    
+    Body: {
+        "assets_list": [
+            {"asset_id": "asset1", "image_data": "base64_data"},
+            {"asset_id": "asset2", "image_data": "base64_data"}
+        ],
+        "analysis_type": "visual"  # "visual", "metadata", or "both"
+    }
+    
+    Returns:
+        Output diversity analysis with visual and metadata diversity scores
+    """
+    if not HAS_DIVERSITY_SYSTEM or not diversity_metrics:
+        raise HTTPException(status_code=503, detail="Diversity system disabled")
+    
+    try:
+        assets_list = request_data.get('assets_list', [])
+        analysis_type = request_data.get('analysis_type', 'both')
+        
+        if not assets_list:
+            raise HTTPException(status_code=400, detail="assets_list cannot be empty")
+        
+        # Analyze output diversity
+        diversity_analysis = diversity_metrics.calculate_output_diversity(assets_list, analysis_type)
+        
+        return {
+            "status": "success",
+            "analysis": diversity_analysis,
+            "assets_count": len(assets_list),
+            "analysis_type": analysis_type,
+            "timestamp": datetime.utcnow().isoformat() + "Z"
+        }
+        
+    except Exception as e:
+        print(f"❌ Output Diversity Analysis Error: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to analyze output diversity: {str(e)}")
+
+
+@app.get("/diversity/type/{type_id}/history")
+async def get_type_diversity_history(
+    type_id: str,
+    days: int = Query(30, description="Number of days to look back"),
+    format: str = Query("json", description="Response format: json or chart")
+):
+    """
+    Get diversity history for a specific ElementType.
+    
+    Args:
+        type_id: ElementType identifier
+        days: Number of days to analyze (default: 30)
+        format: Response format (json, chart, or both)
+        
+    Returns:
+        Historical diversity metrics and trends for the type
+    """
+    if not HAS_DIVERSITY_SYSTEM or not diversity_tracker:
+        raise HTTPException(status_code=503, detail="Diversity system disabled")
+    
+    try:
+        # Get diversity history
+        history_data = diversity_tracker.get_type_diversity_history(type_id, days=days)
+        
+        # Get trend analysis
+        trend_analysis = diversity_tracker.analyze_diversity_trend(type_id, days=days)
+        
+        # Generate chart if requested
+        chart_data = None
+        if format in ['chart', 'both']:
+            chart_data = diversity_viz.plot_diversity_timeline(type_id, days=days)
+        
+        response_data = {
+            "status": "success",
+            "type_id": type_id,
+            "history": history_data,
+            "trend_analysis": trend_analysis,
+            "days_analyzed": days,
+            "format": format,
+            "timestamp": datetime.utcnow().isoformat() + "Z"
+        }
+        
+        if chart_data:
+            response_data["chart"] = chart_data
+        
+        return response_data
+        
+    except Exception as e:
+        print(f"❌ Type Diversity History Error: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to get diversity history: {str(e)}")
+
+
+@app.get("/diversity/overview")
+async def get_diversity_overview():
+    """
+    Get system-wide diversity overview.
+    
+    Returns:
+        Comprehensive overview of diversity across all types and systems
+    """
+    if not HAS_DIVERSITY_SYSTEM or not diversity_tracker:
+        raise HTTPException(status_code=503, detail="Diversity system disabled")
+    
+    try:
+        # Get overall diversity metrics
+        overview = diversity_tracker.get_overall_diversity_overview()
+        
+        # Get type rankings
+        type_rankings = diversity_tracker.get_type_diversity_rankings(limit=10)
+        
+        # Get system health metrics
+        health_metrics = diversity_tracker.get_diversity_health_metrics()
+        
+        return {
+            "status": "success",
+            "overview": overview,
+            "type_rankings": type_rankings,
+            "health_metrics": health_metrics,
+            "timestamp": datetime.utcnow().isoformat() + "Z"
+        }
+        
+    except Exception as e:
+        print(f"❌ Diversity Overview Error: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to get diversity overview: {str(e)}")
+
+
+@app.post("/diversity/generate-report")
+async def generate_diversity_report(request_data: dict):
+    """
+    Generate comprehensive diversity report.
+    
+    Body: {
+        "type_ids": ["type1", "type2"],  # Optional, defaults to all types
+        "days": 30,                      # Analysis window
+        "include_charts": true,          # Include visualization charts
+        "include_recommendations": true  # Include improvement recommendations
+    }
+    
+    Returns:
+        Comprehensive diversity report with metrics, analysis, and recommendations
+    """
+    if not HAS_DIVERSITY_SYSTEM:
+        raise HTTPException(status_code=503, detail="Diversity system disabled")
+    
+    try:
+        type_ids = request_data.get('type_ids')
+        days = request_data.get('days', 30)
+        include_charts = request_data.get('include_charts', True)
+        include_recommendations = request_data.get('include_recommendations', True)
+        
+        # Generate comprehensive report
+        report = diversity_tracker.generate_comprehensive_report(
+            type_ids=type_ids,
+            days=days,
+            include_charts=include_charts,
+            include_recommendations=include_recommendations
+        )
+        
+        return {
+            "status": "success",
+            "report": report,
+            "report_id": report.get('report_id'),
+            "timestamp": datetime.utcnow().isoformat() + "Z"
+        }
+        
+    except Exception as e:
+        print(f"❌ Diversity Report Generation Error: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to generate diversity report: {str(e)}")
+
+
+@app.post("/diversity/optimize/{type_id}")
+async def optimize_type_diversity(
+    type_id: str,
+    request_data: dict
+):
+    """
+    Optimize diversity configuration for a specific type.
+    
+    Args:
+        type_id: ElementType identifier to optimize
+        
+    Body: {
+        "optimization_goals": ["maximize_variety", "ensure_quality"],  # Optimization priorities
+        "max_changes": 5,                                             # Maximum changes to apply
+        "preserve_existing": true                                     # Whether to preserve current settings
+    }
+    
+    Returns:
+        Optimized diversity configuration with applied changes and recommendations
+    """
+    if not HAS_DIVERSITY_SYSTEM or not diversity_optimizer:
+        raise HTTPException(status_code=503, detail="Diversity system disabled")
+    
+    try:
+        optimization_goals = request_data.get('optimization_goals', ['maximize_variety'])
+        max_changes = request_data.get('max_changes', 5)
+        preserve_existing = request_data.get('preserve_existing', True)
+        
+        # Check if type exists
+        if HAS_TYPE_SYSTEM and type_registry:
+            element_type = type_registry.get(type_id)
+            if not element_type:
+                raise HTTPException(status_code=404, detail=f"Type '{type_id}' not found")
+        
+        # Optimize diversity
+        optimized_config = diversity_optimizer.optimize_type_diversity(
+            type_id=type_id,
+            optimization_goals=optimization_goals,
+            max_changes=max_changes,
+            preserve_existing=preserve_existing
+        )
+        
+        # Get improvement suggestions
+        suggestions = diversity_optimizer.suggest_diversity_improvements(type_id)
+        
+        return {
+            "status": "success",
+            "type_id": type_id,
+            "optimized_config": optimized_config,
+            "applied_changes": optimized_config.get('applied_changes', []),
+            "suggestions": suggestions,
+            "optimization_goals": optimization_goals,
+            "max_changes_requested": max_changes,
+            "timestamp": datetime.utcnow().isoformat() + "Z"
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"❌ Diversity Optimization Error: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to optimize diversity: {str(e)}")
+
+
+@app.post("/diversity/generate-diverse-batch")
+async def generate_diverse_batch(request_data: dict):
+    """
+    Generate a batch of diverse parameter sets for efficient multi-asset generation.
+    
+    Body: {
+        "type_id": "type_id",           # ElementType to generate for
+        "count": 20,                     # Number of parameter sets to generate
+        "target_diversity": 0.8,         # Target diversity score
+        "sampling_strategy": "latin_hypercube"  # Sampling strategy
+    }
+    
+    Returns:
+        List of diverse parameter sets ready for batch generation
+    """
+    if not HAS_DIVERSITY_SYSTEM or not diversity_optimizer:
+        raise HTTPException(status_code=503, detail="Diversity system disabled")
+    
+    try:
+        type_id = request_data.get('type_id')
+        count = request_data.get('count', 10)
+        target_diversity = request_data.get('target_diversity', 0.8)
+        sampling_strategy = request_data.get('sampling_strategy', 'latin_hypercube')
+        
+        if not type_id:
+            raise HTTPException(status_code=400, detail="type_id is required")
+        
+        # Generate diverse parameter sets
+        diverse_params = diversity_optimizer.generate_diverse_batch(
+            element_type=type_id,
+            count=count,
+            target_diversity=target_diversity,
+            sampling_strategy=sampling_strategy
+        )
+        
+        # Analyze the diversity of generated parameters
+        diversity_analysis = diversity_metrics.calculate_parameter_diversity(diverse_params)
+        
+        return {
+            "status": "success",
+            "type_id": type_id,
+            "parameter_sets": diverse_params,
+            "count_generated": len(diverse_params),
+            "diversity_analysis": {
+                "diversity_score": diversity_analysis,
+                "target_achieved": diversity_analysis >= target_diversity,
+                "sampling_strategy": sampling_strategy
+            },
+            "target_diversity": target_diversity,
+            "timestamp": datetime.utcnow().isoformat() + "Z"
+        }
+        
+    except Exception as e:
+        print(f"❌ Diverse Batch Generation Error: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to generate diverse batch: {str(e)}")
+
+
+@app.get("/diversity/visualization/{type_id}")
+async def get_diversity_visualization(
+    type_id: str,
+    chart_type: str = Query("timeline", description="Chart type: timeline, distribution, or dashboard"),
+    days: int = Query(30, description="Number of days for timeline charts")
+):
+    """
+    Get diversity visualization for a type.
+    
+    Args:
+        type_id: ElementType identifier
+        chart_type: Type of chart to generate
+        days: Analysis window for timeline charts
+        
+    Returns:
+        Base64-encoded chart image and metadata
+    """
+    if not HAS_DIVERSITY_SYSTEM or not diversity_viz:
+        raise HTTPException(status_code=503, detail="Diversity system disabled")
+    
+    try:
+        # Generate appropriate visualization
+        if chart_type == "timeline":
+            chart_data = diversity_viz.plot_diversity_timeline(type_id, days=days)
+        elif chart_type == "distribution":
+            chart_data = diversity_viz.plot_parameter_distribution_for_type(type_id)
+        elif chart_type == "dashboard":
+            chart_data = diversity_viz.create_diversity_dashboard(type_id)
+        else:
+            raise HTTPException(status_code=400, detail=f"Unsupported chart type: {chart_type}")
+        
+        return {
+            "status": "success",
+            "type_id": type_id,
+            "chart_type": chart_type,
+            "chart_data": chart_data,
+            "days": days if chart_type == "timeline" else None,
+            "timestamp": datetime.utcnow().isoformat() + "Z"
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"❌ Diversity Visualization Error: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to generate diversity visualization: {str(e)}")
+
+
+@app.post("/diversity/record-generation")
+async def record_diversity_generation(request_data: dict):
+    """
+    Record a generation event for diversity tracking.
+    
+    Body: {
+        "type_id": "type_id",
+        "generation_params": {...},
+        "diversity_score": 0.8,
+        "asset_metadata": {...}  # Optional asset metadata
+    }
+    
+    Returns:
+        Confirmation of recording with updated diversity metrics
+    """
+    if not HAS_DIVERSITY_SYSTEM or not diversity_tracker:
+        raise HTTPException(status_code=503, detail="Diversity system disabled")
+    
+    try:
+        type_id = request_data.get('type_id')
+        generation_params = request_data.get('generation_params', {})
+        diversity_score = request_data.get('diversity_score')
+        asset_metadata = request_data.get('asset_metadata', {})
+        
+        if not type_id:
+            raise HTTPException(status_code=400, detail="type_id is required")
+        
+        # Record generation
+        success = diversity_tracker.record_generation(
+            type_id=type_id,
+            generation_params=generation_params,
+            diversity_score=diversity_score,
+            asset_metadata=asset_metadata
+        )
+        
+        if not success:
+            raise HTTPException(status_code=500, detail="Failed to record generation")
+        
+        # Get updated metrics
+        updated_metrics = diversity_tracker.get_current_diversity_metrics(type_id)
+        
+        return {
+            "status": "success",
+            "recorded": True,
+            "type_id": type_id,
+            "updated_metrics": updated_metrics,
+            "timestamp": datetime.utcnow().isoformat() + "Z"
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"❌ Diversity Recording Error: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to record diversity generation: {str(e)}")
+
+
+@app.get("/diversity/stats")
+async def get_diversity_system_stats():
+    """
+    Get comprehensive diversity system statistics.
+    
+    Returns:
+        System-wide diversity metrics, performance, and health indicators
+    """
+    if not HAS_DIVERSITY_SYSTEM:
+        raise HTTPException(status_code=503, detail="Diversity system disabled")
+    
+    try:
+        # Get system statistics
+        stats = {
+            "diversity_system": {
+                "available": HAS_DIVERSITY_SYSTEM,
+                "components": {
+                    "metrics": diversity_metrics is not None,
+                    "tracking": diversity_tracker is not None,
+                    "visualization": diversity_viz is not None,
+                    "optimization": diversity_optimizer is not None
+                }
+            },
+            "tracking_stats": diversity_tracker.get_system_statistics() if diversity_tracker else {},
+            "performance_metrics": diversity_metrics.get_performance_metrics() if diversity_metrics else {},
+            "optimization_stats": diversity_optimizer.get_optimization_stats() if diversity_optimizer else {},
+            "timestamp": datetime.utcnow().isoformat() + "Z"
+        }
+        
+        return {
+            "status": "success",
+            "statistics": stats,
+            "timestamp": datetime.utcnow().isoformat() + "Z"
+        }
+        
+    except Exception as e:
+        print(f"❌ Diversity System Stats Error: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to get diversity system stats: {str(e)}")
 
 if __name__ == "__main__":
     import uvicorn

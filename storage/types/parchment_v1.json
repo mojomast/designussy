@@ -1,0 +1,132 @@
+{
+  "id": "parchment_v1",
+  "name": "Void Parchment",
+  "description": "Aged parchment backgrounds with heavy grain, scratches, and vignette effects for a weathered, ancient appearance in the void aesthetic",
+  "category": "backgrounds",
+  "tags": ["parchment", "aged", "void", "texture", "background", "grain", "weathered"],
+  "render_strategy": {
+    "engine": "pil",
+    "generator_name": "ParchmentGenerator"
+  },
+  "param_schema": {
+    "type": "object",
+    "properties": {
+      "width": {
+        "type": "integer",
+        "default": 1024,
+        "description": "Image width in pixels",
+        "minimum": 64,
+        "maximum": 4096
+      },
+      "height": {
+        "type": "integer",
+        "default": 1024,
+        "description": "Image height in pixels",
+        "minimum": 64,
+        "maximum": 4096
+      },
+      "base_color": {
+        "type": "string",
+        "default": "#0f0f12",
+        "description": "RGB hex color for the parchment base",
+        "pattern": "^#[0-9a-fA-F]{6}$"
+      },
+      "noise_scale": {
+        "type": "number",
+        "default": 1.5,
+        "description": "Intensity of grain texture",
+        "minimum": 0.1,
+        "maximum": 5.0
+      },
+      "complexity": {
+        "type": "number",
+        "default": 0.6,
+        "description": "Overall complexity of weathering effects",
+        "minimum": 0.0,
+        "maximum": 1.0
+      },
+      "randomness": {
+        "type": "number",
+        "default": 0.5,
+        "description": "Amount of random variation in patterns",
+        "minimum": 0.0,
+        "maximum": 1.0
+      },
+      "quality": {
+        "type": "string",
+        "default": "medium",
+        "description": "Generation quality level",
+        "enum": ["low", "medium", "high", "ultra"]
+      },
+      "style_preset": {
+        "type": "string",
+        "default": "detailed",
+        "description": "Preset style for the parchment",
+        "enum": ["minimal", "detailed", "ancient", "pristine", "chaotic", "ordered"]
+      }
+    },
+    "required": ["width", "height"]
+  },
+  "variants": [
+    {
+      "variant_id": "ancient",
+      "name": "Ancient Parchment",
+      "description": "Heavily weathered parchment with maximum aging effects",
+      "parameters": {
+        "complexity": 0.8,
+        "randomness": 0.7,
+        "base_color": "#2a2520",
+        "quality": "high"
+      },
+      "weight": 0.3
+    },
+    {
+      "variant_id": "pristine",
+      "name": "Pristine Parchment",
+      "description": "Clean, well-preserved parchment",
+      "parameters": {
+        "complexity": 0.3,
+        "randomness": 0.2,
+        "base_color": "#d4c5b0",
+        "quality": "medium"
+      },
+      "weight": 0.2
+    },
+    {
+      "variant_id": "minimal",
+      "name": "Minimal Parchment",
+      "description": "Simple, clean texture with minimal effects",
+      "parameters": {
+        "complexity": 0.2,
+        "randomness": 0.1,
+        "quality": "low"
+      },
+      "weight": 0.25
+    },
+    {
+      "variant_id": "chaotic",
+      "name": "Chaotic Parchment",
+      "description": "Highly irregular, damaged texture",
+      "parameters": {
+        "complexity": 0.9,
+        "randomness": 0.9,
+        "quality": "high",
+        "style_preset": "chaotic"
+      },
+      "weight": 0.25
+    }
+  ],
+  "diversity_config": {
+    "strategy": "jitter",
+    "jitter": {
+      "jitter_amount": 0.1,
+      "affected_parameters": ["noise_scale", "complexity", "randomness"]
+    },
+    "diversity_target": 0.7,
+    "max_variations": 100
+  },
+  "version": "1.0.0",
+  "created_by": "system",
+  "is_active": true,
+  "is_template": false
+}

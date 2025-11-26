@@ -1,0 +1,107 @@
+{
+  "id": "giraffe_v1",
+  "name": "Ink Giraffe",
+  "description": "Stylized giraffe silhouettes with elongated necks, spots, and ink-like appearance in the void aesthetic",
+  "category": "creatures",
+  "tags": ["giraffe", "creature", "animal", "ink", "silhouette", "void", "stylized", "spots"],
+  "render_strategy": {
+    "engine": "pil",
+    "generator_name": "GiraffeGenerator"
+  },
+  "param_schema": {
+    "type": "object",
+    "properties": {
+      "width": {
+        "type": "integer",
+        "default": 600,
+        "description": "Image width in pixels",
+        "minimum": 200,
+        "maximum": 1200
+      },
+      "height": {
+        "type": "integer",
+        "default": 800,
+        "description": "Image height in pixels",
+        "minimum": 400,
+        "maximum": 1600
+      },
+      "body_color": {
+        "type": "string",
+        "default": "#d4c5b0",
+        "description": "RGB hex color for the giraffe body",
+        "pattern": "^#[0-9a-fA-F]{6}$"
+      },
+      "spot_color": {
+        "type": "string",
+        "default": "#141414",
+        "description": "RGB hex color for the giraffe spots",
+        "pattern": "^#[0-9a-fA-F]{6}$"
+      },
+      "spot_count": {
+        "type": "integer",
+        "default": 20,
+        "description": "Number of spots to generate",
+        "minimum": 5,
+        "maximum": 50
+      }
+    },
+    "required": ["width", "height"]
+  },
+  "variants": [
+    {
+      "variant_id": "adult",
+      "name": "Adult Giraffe",
+      "description": "Standard giraffe with long neck and many spots",
+      "parameters": {
+        "spot_count": 20
+      },
+      "weight": 0.4
+    },
+    {
+      "variant_id": "baby",
+      "name": "Baby Giraffe",
+      "description": "Young giraffe with shorter neck and bigger spots",
+      "parameters": {
+        "spot_count": 12,
+        "body_color": "#c4b5a0"
+      },
+      "weight": 0.3
+    },
+    {
+      "variant_id": "minimal",
+      "name": "Minimal Giraffe",
+      "description": "Simplified giraffe with fewer spots and cleaner lines",
+      "parameters": {
+        "spot_count": 8
+      },
+      "weight": 0.3
+    }
+  ],
+  "diversity_config": {
+    "strategy": "compositional",
+    "compositional": {
+      "composition": [
+        {
+          "strategy": "jitter",
+          "config": {
+            "jitter_amount": 0.15,
+            "affected_parameters": ["spot_count"]
+          }
+        },
+        {
+          "strategy": "seeded",
+          "config": {
+            "seed": 42,
+            "variation_strength": 0.1
+          }
+        }
+      ]
+    },
+    "diversity_target": 0.75,
+    "max_variations": 60
+  },
+  "version": "1.0.0",
+  "created_by": "system",
+  "is_active": true,
+  "is_template": false
+}

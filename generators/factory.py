@@ -3,12 +3,23 @@ Generator Factory
 
 This module implements a factory pattern for creating generator instances
 with proper configuration management and validation.
+
+Updated to integrate DynamicGeneratorLoader for type-aware generation.
 """
 
 import logging
-from typing import Dict, Any, Optional, Type, Union
+from typing import Dict, Any, Optional, Type, Union, List
 from .base_generator import BaseGenerator
 from .registry import GeneratorRegistry
+from .dynamic_loader import DynamicGeneratorLoader
+
+# Import type system components
+try:
+    from enhanced_design.element_types import ElementType
+    HAS_TYPE_SYSTEM = True
+except ImportError:
+    HAS_TYPE_SYSTEM = False
+    ElementType = None
 
 
 class GeneratorFactory:
@@ -17,6 +28,8 @@ class GeneratorFactory:
     
     Provides a clean interface for creating generators with proper error handling,
     configuration management, and dependency injection.
+    
+    Updated to support type-aware generation through DynamicGeneratorLoader.
     """
     
     def __init__(self, registry: Optional[GeneratorRegistry] = None):
@@ -30,6 +43,12 @@ class GeneratorFactory:
         self.logger = logging.getLogger(__name__)
         self._generator_cache: Dict[str, BaseGenerator] = {}
         self._default_configs: Dict[str, Dict[str, Any]] = {}
+        
+        # Initialize DynamicGeneratorLoader for type-aware generation
+        self.dynamic_loader = DynamicGeneratorLoader(
+            generator_registry=self.registry
+        )
+        self.logger.info("Initialized GeneratorFactory with DynamicGeneratorLoader")
         
     def create_generator(self, generator_type: str, **kwargs) -> BaseGenerator:
         """
@@ -88,6 +107,44 @@ class GeneratorFactory:
             self.logger.error(f"Failed to create generator '{generator_type}': {e}")
             raise Exception(f"Failed to initialize generator '{generator_type}': {e}")
     
+    def create_generator_from_type(self, type_id: str, **kwargs) -> Optional[BaseGenerator]:
+        """
+        Create a generator instance from an ElementType definition.
+        
+        Args:
+            type_id: ElementType ID to create generator from
+            **kwargs: Additional generation parameters
+            
+        Returns:
+            Generator instance configured according to the ElementType
+            
+        Raises:
+            RuntimeError: If type system is not available
+            ValueError: If type is not found or not supported
+        """
+        if not HAS_TYPE_SYSTEM:
+            raise RuntimeError("Type system not available - cannot create generator from type")
+        
+        try:
+            generator = self.dynamic_loader.create_generator_from_type_id(
+                type_id=type_id,
+                **kwargs
+            )
+            
+            if generator is None:
+                available_types = self.dynamic_loader.get_supported_types()
+                raise ValueError(
+                    f"Could not create generator from type '{type_id}'. "
+                    f"Available types: {available_types}"
+                )
+            
+            self.logger.info(f"Created generator from type: {type_id}")
+            return generator
+            
+        except Exception as e:
+            self.logger.error(f"Failed to create generator from type {type_id}: {e}")
+            raise
+    
     def create_generator_with_defaults(self, generator_type: str, 
                                      override_defaults: Optional[Dict[str, Any]] = None) -> BaseGenerator:
         """
@@ -123,7 +180,7 @@ class GeneratorFactory:
         
         generator_class = self.registry.get_generator_class(generator_type)
         
-        return {
+        info = {
             'type': generator_type,
             'class_name': generator_class.__name__,
             'module': generator_class.__module__,
@@ -131,6 +188,33 @@ class GeneratorFactory:
             'signature': self.registry.get_generator_signature(generator_type),
             'validation': self.registry.validate_generator(generator_type)
         }
+        
+        # Add type-aware info if available
+        if hasattr(generator_class, 'get_type_aware_params'):
+            info['type_aware_params'] = generator_class.get_type_aware_params()
+        
+        return info
+    
+    def get_type_info(self, type_id: str) -> Optional[Dict[str, Any]]:
+        """
+        Get information about an ElementType.
+        
+        Args:
+            type_id: ElementType ID to get info for
+            
+        Returns:
+            Dictionary with type information or None
+        """
+        return self.dynamic_loader.get_type_info(type_id)
+    
+    def list_supported_types(self) -> List[str]:
+        """
+        Get list of supported ElementTypes.
+        
+        Returns:
+            List of supported type IDs
+        """
+        return self.dynamic_loader.get_supported_types()
     
     def get_default_config(self, generator_type: str) -> Dict[str, Any]:
         """
@@ -244,6 +328,25 @@ class GeneratorFactory:
         return {
             'cached_generators': len(self._generator_cache),
             'default_configs': len(self._default_configs)
+        }
+    
+    def get_factory_stats(self) -> Dict[str, Any]:
+        """
+        Get comprehensive factory statistics.
+        
+        Returns:
+            Dictionary with factory statistics
+        """
+        base_stats = self.get_cache_stats()
+        
+        # Add DynamicGeneratorLoader stats
+        loader_stats = self.dynamic_loader.get_statistics()
+        
+        return {
+            **base_stats,
+            'total_generators': len(self.registry),
+            'type_system_available': HAS_TYPE_SYSTEM,
+            'dynamic_loader_stats': loader_stats
         }
     
     def _get_cache_key(self, generator_type: str, config: Dict[str, Any]) -> str:

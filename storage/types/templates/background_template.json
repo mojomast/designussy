@@ -1,0 +1,102 @@
+{
+  "id": "background_template",
+  "name": "Background Template",
+  "description": "Template for creating background/texture types with customizable atmosphere and mood settings",
+  "category": "backgrounds",
+  "tags": ["background", "texture", "atmosphere", "mood", "template"],
+  "render_strategy": {
+    "engine": "pil",
+    "generator_name": "parchment"
+  },
+  "param_schema": {
+    "type": "object",
+    "title": "Background Parameters",
+    "description": "Configuration for background generation",
+    "properties": {
+      "darkness": {
+        "type": "float",
+        "minimum": 0.0,
+        "maximum": 1.0,
+        "default": 0.6,
+        "description": "Overall darkness of the background"
+      },
+      "texture_intensity": {
+        "type": "float",
+        "minimum": 0.0,
+        "maximum": 1.0,
+        "default": 0.7,
+        "description": "Intensity of surface texture"
+      },
+      "atmosphere": {
+        "type": "string",
+        "enum": ["mysterious", "ethereal", "dark", "ancient", "cosmic", "void"],
+        "default": "mysterious",
+        "description": "Overall atmospheric mood"
+      },
+      "color_palette": {
+        "type": "string",
+        "enum": ["warm", "cool", "neutral", "void", "cosmic", "earthy"],
+        "default": "neutral",
+        "description": "Dominant color scheme"
+      },
+      "grain_density": {
+        "type": "integer",
+        "minimum": 10,
+        "maximum": 100,
+        "default": 50,
+        "description": "Density of surface grain and noise"
+      },
+      "aging_effect": {
+        "type": "float",
+        "minimum": 0.0,
+        "maximum": 1.0,
+        "default": 0.3,
+        "description": "Amount of aging and weathering"
+      },
+      "depth_layers": {
+        "type": "integer",
+        "minimum": 1,
+        "maximum": 5,
+        "default": 3,
+        "description": "Number of depth layers for visual complexity"
+      }
+    },
+    "required": ["darkness", "texture_intensity", "atmosphere"]
+  },
+  "examples": [
+    {
+      "name": "Ancient Library",
+      "description": "Aged parchment with deep, warm tones",
+      "tags": ["ancient", "library", "aged", "warm"],
+      "atmosphere": "ancient",
+      "color_palette": "warm",
+      "aging_effect": 0.8,
+      "darkness": 0.4
+    },
+    {
+      "name": "Void Space",
+      "description": "Deep, dark void with cosmic elements",
+      "tags": ["void", "space", "cosmic", "dark"],
+      "atmosphere": "void",
+      "color_palette": "cosmic",
+      "darkness": 0.9,
+      "grain_density": 30
+    },
+    {
+      "name": "Mystical Forest",
+      "description": "Ethereal background with mysterious ambiance",
+      "tags": ["mystical", "forest", "ethereal", "green"],
+      "atmosphere": "mysterious",
+      "color_palette": "cool",
+      "depth_layers": 4,
+      "texture_intensity": 0.6
+    }
+  ],
+  "version": "1.0.0",
+  "usage_notes": [
+    "Use high darkness (0.8+) for dramatic, intense backgrounds",
+    "Combine void atmosphere with cosmic color palette",
+    "Higher texture_intensity creates more detailed surfaces",
+    "Aging_effect adds realism through weathering and wear"
+  ]
+}

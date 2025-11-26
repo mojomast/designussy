@@ -1,0 +1,111 @@
+{
+  "id": "effect_template",
+  "name": "Effect Template",
+  "description": "Template for creating visual effects with customizable intensity and stylistic parameters",
+  "category": "effects",
+  "tags": ["effect", "visual", "enhancement", "particle", "glow", "template"],
+  "render_strategy": {
+    "engine": "pil",
+    "generator_name": "enso"
+  },
+  "param_schema": {
+    "type": "object",
+    "title": "Effect Parameters",
+    "description": "Configuration for visual effect generation",
+    "properties": {
+      "intensity": {
+        "type": "float",
+        "minimum": 0.0,
+        "maximum": 1.0,
+        "default": 0.7,
+        "description": "Overall intensity and brightness of the effect"
+      },
+      "duration": {
+        "type": "float",
+        "minimum": 0.1,
+        "maximum": 2.0,
+        "default": 1.0,
+        "description": "Apparent duration or persistence of the effect"
+      },
+      "effect_color": {
+        "type": "string",
+        "pattern": "^#[0-9A-Fa-f]{6}$",
+        "default": "#FFD700",
+        "description": "Primary color of the effect"
+      },
+      "effect_size": {
+        "type": "integer",
+        "minimum": 64,
+        "maximum": 512,
+        "default": 256,
+        "description": "Size of the effect area"
+      },
+      "particle_density": {
+        "type": "integer",
+        "minimum": 1,
+        "maximum": 100,
+        "default": 20,
+        "description": "Number of particles or elements in the effect"
+      },
+      "fade_rate": {
+        "type": "float",
+        "minimum": 0.0,
+        "maximum": 1.0,
+        "default": 0.3,
+        "description": "Rate at which the effect fades over time"
+      },
+      "chaos_level": {
+        "type": "float",
+        "minimum": 0.0,
+        "maximum": 1.0,
+        "default": 0.5,
+        "description": "Random variation and unpredictability"
+      },
+      "energy_flow": {
+        "type": "string",
+        "enum": ["radial", "linear", "spiral", "explosive", "gentle"],
+        "default": "radial",
+        "description": "Pattern of energy flow in the effect"
+      }
+    },
+    "required": ["intensity", "duration", "effect_color"]
+  },
+  "examples": [
+    {
+      "name": "Mystical Glow",
+      "description": "Soft, ethereal glow effect with golden tones",
+      "tags": ["glow", "mystical", "ethereal", "golden"],
+      "effect_color": "#FFD700",
+      "intensity": 0.6,
+      "energy_flow": "gentle",
+      "chaos_level": 0.2
+    },
+    {
+      "name": "Energy Burst",
+      "description": "Intense, explosive energy effect",
+      "tags": ["energy", "burst", "explosive", "intense"],
+      "effect_color": "#FF4500",
+      "intensity": 0.9,
+      "energy_flow": "explosive",
+      "particle_density": 80,
+      "chaos_level": 0.8
+    },
+    {
+      "name": "Cosmic Ripple",
+      "description": "Gentle, spreading cosmic effect",
+      "tags": ["cosmic", "ripple", "gentle", "spreading"],
+      "effect_color": "#4B0082",
+      "intensity": 0.5,
+      "energy_flow": "radial",
+      "fade_rate": 0.1,
+      "particle_density": 15
+    }
+  ],
+  "version": "1.0.0",
+  "usage_notes": [
+    "Use high intensity (0.8+) for dramatic, attention-grabbing effects",
+    "Lower chaos_level creates more controlled, predictable effects",
+    "Explosive energy_flow works well for action or impact moments",
+    "Gentle energy_flow suits calm, atmospheric effects"
+  ]
+}

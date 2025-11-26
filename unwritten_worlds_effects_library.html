@@ -8,7 +8,7 @@
 
     <!-- Shared Component Library -->
     <link rel="stylesheet" href="assets/css/unwritten_worlds_common.css">
-    
+
     <style>
         /* Effects library demo-specific styles */
         body {
@@ -346,7 +346,8 @@
         <!-- Glyphs -->
         <div class="effect-card">
             <div class="effect-preview" style="background: #d4c5b0;">
-                <img src="assets/static/elements/glyphs/ink_enso_1.png" style="width: 80%; height: 80%; object-fit: contain;">
+                <img src="assets/static/elements/glyphs/ink_enso_1.png"
+                    style="width: 80%; height: 80%; object-fit: contain;">
             </div>
             <div class="effect-info">
                 <h3 class="font-cinzel">Ink Enso</h3>
@@ -430,6 +431,59 @@
 
             <p class="font-cormorant" style="font-size: 1.4rem; max-width: 700px; color: #aaa;">
                 "Here, the void takes shape. Elements born of code and chaos weave together to form the fabric of a new
+        </div>
+
+    </div>
+
+    <h2 class="font-cinzel text-accent"
+        style="margin: 4rem 0 2rem 0; border-bottom: 1px solid #333; width: 100%; max-width: 1200px; padding-bottom: 1rem;">
+        New Procedural Assets</h2>
+
+    <div class="library-grid">
+        <!-- New Asset Cards will be dynamically generated -->
+        <div id="new-assets-container"></div>
+    </div>
+
+    <h2 class="font-cinzel text-accent"
+        style="margin: 4rem 0 2rem 0; border-bottom: 1px solid #333; width: 100%; max-width: 1200px; padding-bottom: 1rem;">
+        Full Showcase</h2>
+
+    <div
+        style="position: relative; width: 100%; max-width: 1200px; min-height: 600px; background: #000; border-radius: 12px; overflow: hidden; box-shadow: 0 20px 60px rgba(0,0,0,0.8);">
+
+        <!-- Layer 1: Background -->
+        <img src="assets/static/elements/backgrounds/void_parchment_2.png"
+            style="position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; opacity: 0.3;">
+
+        <!-- Layer 2: Texture Overlay -->
+        <div class="texture-overlay"></div>
+
+        <!-- Layer 3: Content -->
+        <div
+            style="z-index: 10; text-align: center; display: flex; flex-direction: column; align-items: center; gap: 40px; padding: 40px;">
+
+            <img src="assets/static/elements/ui/void_orb_1.png"
+                style="width: 100px; height: 100px; animation: runePulse 4s infinite;">
+
+            <h1 class="font-cinzel"
+                style="font-size: 4rem; text-shadow: 0 0 20px rgba(212, 197, 176, 0.3); color: #e0e0e0;">THE VOIDUSSY
+            </h1>
+
+            <!-- Invert filter for the divider to make it white-ish on dark bg -->
+            <img src="assets/static/elements/ui/ink_divider_1.png"
+                style="width: 500px; filter: invert(1) drop-shadow(0 0 5px #fff);">
+
+            <div
+                style="position: relative; width: 400px; height: 400px; display: flex; align-items: center; justify-content: center;">
+                <!-- Invert enso to make it white/glowy -->
+                <img src="assets/static/elements/glyphs/ink_enso_2.png"
+                    style="position: absolute; width: 100%; height: 100%; opacity: 0.6; animation: slowSpin 60s linear infinite; filter: invert(1);">
+                <img src="assets/static/elements/creatures/kangaroo_1.png"
+                    style="position: relative; width: 200px; filter: drop-shadow(0 20px 30px rgba(0,0,0,1));">
+            </div>
+
+            <p class="font-cormorant" style="font-size: 1.4rem; max-width: 700px; color: #aaa;">
+                "Here, the void takes shape. Elements born of code and chaos weave together to form the fabric of a new
                 reality."
             </p>
 
@@ -438,7 +492,53 @@
     </div>
 
     <!-- Shared JavaScript Library -->
+    <script src="assets/js/unwritten_worlds_core.js"></script>
+    <script src="assets/js/unwritten_worlds_assets.js"></script>
     <script src="assets/js/unwritten_worlds_common.js"></script>
+
+    <script>
+        // Dynamically showcase new assets
+        if (window.UnwrittenAssets) {
+            const container = document.getElementById('new-assets-container');
+
+            // Showcase a selection of new assets
+            const showcaseAssets = [
+                { category: 'glyphs', name: 'void_rune', title: 'Void Rune' },
+                { category: 'glyphs', name: 'ink_spiral', title: 'Ink Spiral' },
+                { category: 'glyphs', name: 'ethereal_feather', title: 'Ethereal Feather' },
+                { category: 'glyphs', name: 'astral_eye', title: 'Astral Eye' },
+                { category: 'glyphs', name: 'void_circuit', title: 'Void Circuit' },
+                { category: 'creatures', name: 'spectral_serpent', title: 'Spectral Serpent' },
+                { category: 'creatures', name: 'void_hopper', title: 'Void Hopper' },
+                { category: 'creatures', name: 'abyssal_jelly', title: 'Abyssal Jelly' },
+                { category: 'backgrounds', name: 'ink_nebula', title: 'Ink Nebula' },
+                { category: 'backgrounds', name: 'ethereal_mist', title: 'Ethereal Mist' }
+            ];
+
+            showcaseAssets.forEach(asset => {
+                const card = document.createElement('div');
+                card.className = 'effect-card';
+
+                const assetInfo = UnwrittenAssets.catalog[asset.category][asset.name];
+                const path = UnwrittenAssets.getRandom(asset.category, asset.name);
+
+                card.innerHTML = `
+                    <div class="effect-preview">
+                        <img src="${path}" style="max-width: 100%; max-height: 100%; object-fit: contain;">
+                    </div>
+                    <div class="effect-info">
+                        <h3 class="font-cinzel">${asset.title}</h3>
+                        <p class="font-cormorant">${assetInfo.description}</p>
+                        <div class="code-snippet">UnwrittenAssets.getPath('${asset.category}', '${asset.name}', 1)</div>
+                    </div>
+                `;
+
+                container.appendChild(card);
+            });
+
+            console.log('New assets showcase loaded with', showcaseAssets.length, 'assets');
+        }
+    </script>
 </body>
 
 </html>

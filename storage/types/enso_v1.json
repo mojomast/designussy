@@ -1,0 +1,130 @@
+{
+  "id": "enso_v1",
+  "name": "Ink Enso",
+  "description": "Organic circular brush strokes with variable complexity, chaos, and color for meditative and artistic effects in the void aesthetic",
+  "category": "glyphs",
+  "tags": ["enso", "circle", "ink", "meditation", "brush", "organic", "void", "japanese"],
+  "render_strategy": {
+    "engine": "pil",
+    "generator_name": "EnsoGenerator"
+  },
+  "param_schema": {
+    "type": "object",
+    "properties": {
+      "width": {
+        "type": "integer",
+        "default": 800,
+        "description": "Image width in pixels",
+        "minimum": 64,
+        "maximum": 2048
+      },
+      "height": {
+        "type": "integer",
+        "default": 800,
+        "description": "Image height in pixels",
+        "minimum": 64,
+        "maximum": 2048
+      },
+      "base_color": {
+        "type": "string",
+        "default": "#000000",
+        "description": "RGB hex color for the enso strokes",
+        "pattern": "^#[0-9a-fA-F]{6}$"
+      },
+      "complexity": {
+        "type": "integer",
+        "default": 40,
+        "description": "Number of brush strokes (higher = more detailed)",
+        "minimum": 5,
+        "maximum": 200
+      },
+      "chaos": {
+        "type": "number",
+        "default": 1.0,
+        "description": "Chaos factor for organic variation (0.1 = stable, 2.0 = very chaotic)",
+        "minimum": 0.1,
+        "maximum": 2.0
+      },
+      "style_preset": {
+        "type": "string",
+        "default": "detailed",
+        "description": "Preset style for the enso",
+        "enum": ["minimal", "detailed", "meditative", "energetic", "chaotic", "ordered"]
+      }
+    },
+    "required": ["width", "height"]
+  },
+  "variants": [
+    {
+      "variant_id": "meditative",
+      "name": "Meditative Enso",
+      "description": "Simple, centered enso for meditation with minimal chaos",
+      "parameters": {
+        "complexity": 20,
+        "chaos": 0.3,
+        "base_color": "#000000",
+        "style_preset": "minimal"
+      },
+      "weight": 0.3
+    },
+    {
+      "variant_id": "energetic",
+      "name": "Energetic Enso",
+      "description": "Dynamic, chaotic enso with high energy",
+      "parameters": {
+        "complexity": 60,
+        "chaos": 1.5,
+        "base_color": "#8b0000",
+        "style_preset": "chaotic"
+      },
+      "weight": 0.2
+    },
+    {
+      "variant_id": "ordered",
+      "name": "Ordered Enso",
+      "description": "Perfect geometric circle with precision",
+      "parameters": {
+        "complexity": 30,
+        "chaos": 0.1,
+        "style_preset": "ordered"
+      },
+      "weight": 0.25
+    },
+    {
+      "variant_id": "balanced",
+      "name": "Balanced Enso",
+      "description": "Richly detailed enso with balanced chaos",
+      "parameters": {
+        "complexity": 40,
+        "chaos": 1.0,
+        "style_preset": "detailed"
+      },
+      "weight": 0.25
+    }
+  ],
+  "diversity_config": {
+    "strategy": "strategy_pool",
+    "strategy_pool": {
+      "strategy_pool": [
+        {
+          "complexity": 30,
+          "chaos": 0.5
+        },
+        {
+          "complexity": 70,
+          "chaos": 1.5
+        },
+        {
+          "complexity": 50,
+          "chaos": 1.0
+        }
+      ]
+    },
+    "diversity_target": 0.8,
+    "max_variations": 150
+  },
+  "version": "1.0.0",
+  "created_by": "system",
+  "is_active": true,
+  "is_template": false
+}

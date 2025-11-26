@@ -3,15 +3,25 @@ Parchment Generator
 
 This module implements the Void Parchment texture generator, 
 creating aged parchment backgrounds with realistic grain and weathering.
+
+Updated to be type-aware and support ElementType-based generation.
 """
 
 from typing import Optional, Tuple, Union, Dict, Any
-from PIL import Image, ImageOps
+from PIL import Image, ImageOps, ImageEnhance
 from .base_generator import BaseGenerator
 from .schemas import GenerationParameters
 from .color_utils import apply_palette_to_parameters
 from .presets import get_preset_manager
 import numpy as np
+
+# Import type system components
+try:
+    from enhanced_design.element_types import ElementType
+    HAS_TYPE_SYSTEM = True
+except ImportError:
+    HAS_TYPE_SYSTEM = False
+    ElementType = None
 
 
 class ParchmentGenerator(BaseGenerator):
@@ -21,16 +31,20 @@ class ParchmentGenerator(BaseGenerator):
     Creates aged parchment backgrounds with heavy grain, scratches,
     and vignette effects for a weathered, ancient appearance.
     
+    Updated to support type-aware generation from ElementType definitions.
+    
     Supports advanced parameters including:
     - Quality controls and resolution settings
     - Custom color palettes and styling
     - Preset application
     - Enhanced weathering effects
+    - Type-based parameter transformation
     """
     
     def __init__(self, width: int = 1024, height: int = 1024, 
                  base_color: Optional[Tuple[int, int, int]] = None, 
-                 noise_scale: float = 1.5, **kwargs):
+                 noise_scale: float = 1.5, 
+                 element_type: Optional[ElementType] = None, **kwargs):
         """
         Initialize the parchment generator.
         
@@ -39,6 +53,7 @@ class ParchmentGenerator(BaseGenerator):
             height: Image height in pixels  
             base_color: RGB base color for parchment
             noise_scale: Intensity of grain texture
+            element_type: Optional ElementType for type-aware generation
             **kwargs: Additional configuration options
         """
         if base_color is None:
@@ -54,6 +69,22 @@ class ParchmentGenerator(BaseGenerator):
         
         self.noise_scale = noise_scale
         self.preset_manager = get_preset_manager()
+        self.element_type = element_type
+        
+    def set_element_type(self, element_type: ElementType) -> 'ParchmentGenerator':
+        """
+        Set the ElementType for type-aware generation.
+        
+        Args:
+            element_type: ElementType definition to use
+            
+        Returns:
+            Self for method chaining
+        """
+        if HAS_TYPE_SYSTEM and isinstance(element_type, ElementType):
+            self.element_type = element_type
+            self.logger.info(f"Set ElementType: {element_type.id}")
+        return self
         
     def generate(self, **kwargs) -> Image.Image:
         """
@@ -63,11 +94,16 @@ class ParchmentGenerator(BaseGenerator):
             **kwargs: Generation parameters including:
                 - GenerationParameters object
                 - Legacy parameters (width, height, seed, noise_scale)
+                - ElementType-based parameters
                 - Custom overrides
                 
         Returns:
             PIL Image of the generated parchment texture
         """
+        # Handle type-aware generation first
+        if self.element_type and HAS_TYPE_SYSTEM:
+            return self._generate_from_element_type(**kwargs)
+            
         # Handle advanced parameters
         if 'parameters' in kwargs and isinstance(kwargs['parameters'], GenerationParameters):
             parameters = kwargs['parameters']
@@ -109,6 +145,107 @@ class ParchmentGenerator(BaseGenerator):
         img = self.validate_output_size(img)
         
         self.logger.info("Parchment texture generation completed")
+        return img
+    
+    def _generate_from_element_type(self, **kwargs) -> Image.Image:
+        """
+        Generate parchment texture from ElementType definition.
+        
+        Args:
+            **kwargs: Additional parameter overrides
+            
+        Returns:
+            PIL Image of the generated parchment texture
+        """
+        if not self.element_type:
+            raise ValueError("No ElementType set for type-aware generation")
+            
+        # Get parameters from ElementType
+        params = self.element_type.get_effective_params()
+        
+        # Apply any additional overrides from kwargs
+        for key, value in kwargs.items():
+            if key not in ['parameters']:  # Skip GenerationParameters in type mode
+                params[key] = value
+        
+        # Set up generation parameters
+        effective_width = params.get('width', self.width)
+        effective_height = params.get('height', self.height)
+        
+        # Update dimensions
+        self.width = effective_width
+        self.height = effective_height
+        
+        # Convert color if needed
+        if 'base_color' in params:
+            if isinstance(params['base_color'], str):
+                hex_color = params['base_color'].lstrip('#')
+                rgb_color = tuple(int(hex_color[i:i+2], 16) for i in (0, 2, 4))
+                params['base_color'] = rgb_color
+        
+        # Create GenerationParameters for consistency
+        generation_params = GenerationParameters(
+            width=effective_width,
+            height=effective_height,
+            base_color=params.get('base_color', '#0f0f12'),  # Default to dark color
+            noise_scale=params.get('noise_scale', self.noise_scale),
+            complexity=params.get('complexity', 0.6),
+            randomness=params.get('randomness', 0.5),
+            quality=params.get('quality', 'medium'),
+            style_preset=params.get('style_preset', 'detailed')
+        )
+        
+        # Apply style preset if specified
+        if generation_params.style_preset:
+            preset_name = f"parchment_{generation_params.style_preset}"
+            try:
+                generation_params = self.preset_manager.apply_preset(generation_params, preset_name)
+            except ValueError:
+                pass
+        
+        # Generate the texture
+        img = self._generate_base_parchment(generation_params)
+        
+        # Apply enhanced effects based on type configuration
+        img = self._apply_type_specific_effects(img, params)
+        
+        self.logger.info(f"Generated parchment from ElementType: {self.element_type.id}")
+        return img
+    
+    def _apply_type_specific_effects(self, img: Image.Image, params: Dict[str, Any]) -> Image.Image:
+        """
+        Apply effects specific to the ElementType configuration.
+        
+        Args:
+            img: Base PIL Image
+            params: Type-specific parameters
+            
+        Returns:
+            PIL Image with type-specific effects applied
+        """
+        # Apply intensity-based effects
+        intensity = params.get('intensity', 0.5)
+        
+        # Vignette adjustment
+        vignette_intensity = params.get('vignette_intensity', 0.6)
+        if vignette_intensity != 0.6:
+            img = self.apply_vignette(img, intensity=vignette_intensity)
+        
+        # Age effects based on type metadata
+        if self.element_type and 'age' in params:
+            age_factor = params['age']
+            if age_factor > 0.5:
+                # More aging effects
+                img = self._apply_enhanced_weathering(img, intensity=age_factor * 2.0, parameters=None)
+        
+        # Texture depth based on type complexity
+        if self.element_type and 'texture_depth' in params:
+            depth = params['texture_depth']
+            if depth > 0.7:
+                # Add fine texture overlay
+                fine_texture = self.create_noise_layer(scale=0.3, opacity=int(30 * depth))
+                img = Image.composite(img, fine_texture, fine_texture)
+        
         return img
     
     def _generate_base_parchment(self, parameters: GenerationParameters) -> Image.Image:
@@ -205,7 +342,7 @@ class ParchmentGenerator(BaseGenerator):
         return img
     
     def _apply_enhanced_weathering(self, img: Image.Image, intensity: float, 
-                                 parameters: GenerationParameters) -> Image.Image:
+                                 parameters: Optional[GenerationParameters]) -> Image.Image:
         """
         Apply enhanced weathering effects based on parameters.
         
@@ -221,12 +358,12 @@ class ParchmentGenerator(BaseGenerator):
         img = self.add_scratch_texture(img, scale=intensity)
         
         # Add stain effects based on randomness
-        if parameters.randomness > 0.6:
+        if parameters and parameters.randomness > 0.6:
             stain_intensity = (parameters.randomness - 0.6) * 1.5
             img = self._apply_stain_effects(img, intensity=stain_intensity)
         
         # Add crack effects for high complexity and chaos
-        if parameters.complexity > 0.7 and parameters.randomness > 0.5:
+        if parameters and parameters.complexity > 0.7 and parameters.randomness > 0.5:
             img = self._apply_crack_effects(img, intensity=parameters.complexity)
         
         return img
@@ -332,6 +469,26 @@ class ParchmentGenerator(BaseGenerator):
             'style_preset': 'detailed'
         }
     
+    def get_type_aware_params(self) -> Dict[str, Any]:
+        """
+        Get parameters expected by ElementType schema.
+        
+        Returns:
+            Dictionary of type-aware parameters
+        """
+        return {
+            'width': {'type': 'int', 'default': 1024, 'min': 64, 'max': 4096},
+            'height': {'type': 'int', 'default': 1024, 'min': 64, 'max': 4096},
+            'base_color': {'type': 'str', 'default': '#0f0f12', 'description': 'Hex color string'},
+            'noise_scale': {'type': 'float', 'default': 1.5, 'min': 0.1, 'max': 5.0},
+            'complexity': {'type': 'float', 'default': 0.6, 'min': 0.0, 'max': 1.0},
+            'randomness': {'type': 'float', 'default': 0.5, 'min': 0.0, 'max': 1.0},
+            'quality': {'type': 'str', 'default': 'medium', 'choices': ['low', 'medium', 'high', 'ultra']},
+            'style_preset': {'type': 'str', 'default': 'detailed', 'choices': ['minimal', 'detailed', 'chaotic', 'ordered']},
+            'intensity': {'type': 'float', 'default': 0.5, 'min': 0.0, 'max': 1.0},
+            'vignette_intensity': {'type': 'float', 'default': 0.6, 'min': 0.0, 'max': 1.0}
+        }
+    
     def get_available_presets(self) -> Dict[str, str]:
         """
         Get available presets specific to parchment generation.
@@ -397,23 +554,27 @@ class ParchmentGenerator(BaseGenerator):
                 "complexity": 0.8,
                 "randomness": 0.7,
                 "base_color": "#2a2520",
-                "quality": "high"
+                "quality": "high",
+                "style_preset": "chaotic"
             },
             "pristine": {
                 "complexity": 0.3,
                 "randomness": 0.2,
                 "base_color": "#d4c5b0",
-                "quality": "medium"
+                "quality": "medium",
+                "style_preset": "minimal"
             },
             "weathered": {
                 "complexity": 0.6,
                 "randomness": 0.6,
-                "quality": "high"
+                "quality": "high",
+                "style_preset": "detailed"
             },
             "minimal": {
                 "complexity": 0.2,
                 "randomness": 0.1,
-                "quality": "low"
+                "quality": "low",
+                "style_preset": "minimal"
             }
         }
         

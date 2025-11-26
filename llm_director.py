@@ -11,6 +11,17 @@ from pydantic import BaseModel, Field
 from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
 
+# Import Type Creation components
+try:
+    from .llm.type_creator import LLMTypeCreator
+    from .llm.type_validator import TypeValidator, ValidationResult
+    from .enhanced_design.element_types import ElementType
+    from .enhanced_design.type_registry import get_type_registry
+    HAS_TYPE_SYSTEM = True
+except ImportError as e:
+    HAS_TYPE_SYSTEM = False
+    print(f"Type system not available: {e}")
+
 # Performance monitoring
 class PerformanceTracker:
     """Track LLM Director performance metrics."""
@@ -309,3 +320,288 @@ def clear_llm_cache():
     """Clear the LLM response cache."""
     with _cache_lock:
         _llm_cache.clear()
+
+
+# ==================== LLM Type Creation Functions ====================
+
+def create_element_type_from_prompt(description: str, api_key: str, context: Optional[Dict[str, Any]] = None, 
+                                  model: str = "gpt-4o-2024-08-06", base_url: Optional[str] = None) -> Dict[str, Any]:
+    """
+    Create a new ElementType from natural language description using LLM.
+    
+    Args:
+        description: Natural language description of the desired element type
+        api_key: API key for LLM authentication
+        context: Additional context information
+        model: LLM model to use
+        base_url: Base URL for the API
+        
+    Returns:
+        Dictionary with type data and validation results
+    """
+    if not HAS_TYPE_SYSTEM:
+        return {
+            "success": False,
+            "error": "Type system not available",
+            "type_data": None,
+            "validation_result": None
+        }
+    
+    try:
+        # Initialize Type Creator
+        type_creator = LLMTypeCreator(api_key=api_key, model=model, base_url=base_url)
+        
+        # Create the element type
+        element_type = type_creator.propose_element_type(description, context)
+        
+        return {
+            "success": True,
+            "type_data": element_type.to_dict(),
+            "type_id": element_type.id,
+            "validation_result": "Valid",
+            "llm_prompt": element_type.llm_prompt,
+            "llm_model": element_type.llm_model
+        }
+        
+    except Exception as e:
+        return {
+            "success": False,
+            "error": str(e),
+            "type_data": None,
+            "validation_result": None
+        }
+
+
+def refine_element_type(type_id: str, feedback: str, api_key: str, 
+                       model: str = "gpt-4o-2024-08-06", base_url: Optional[str] = None) -> Dict[str, Any]:
+    """
+    Refine an existing element type based on user feedback.
+    
+    Args:
+        type_id: ID of the element type to refine
+        feedback: Natural language feedback for improvement
+        api_key: API key for LLM authentication
+        model: LLM model to use
+        base_url: Base URL for the API
+        
+    Returns:
+        Dictionary with refined type data and validation results
+    """
+    if not HAS_TYPE_SYSTEM:
+        return {
+            "success": False,
+            "error": "Type system not available",
+            "type_data": None,
+            "validation_result": None
+        }
+    
+    try:
+        # Initialize Type Creator
+        type_creator = LLMTypeCreator(api_key=api_key, model=model, base_url=base_url)
+        
+        # Refine the element type
+        element_type = type_creator.refine_element_type(type_id, feedback)
+        
+        return {
+            "success": True,
+            "type_data": element_type.to_dict(),
+            "type_id": element_type.id,
+            "validation_result": "Valid",
+            "refinement_feedback": feedback
+        }
+        
+    except Exception as e:
+        return {
+            "success": False,
+            "error": str(e),
+            "type_data": None,
+            "validation_result": None
+        }
+
+
+def validate_element_type_schema(type_data: Dict[str, Any]) -> Dict[str, Any]:
+    """
+    Validate an element type definition using the TypeValidator.
+    
+    Args:
+        type_data: Dictionary containing element type definition
+        
+    Returns:
+        Dictionary with validation results
+    """
+    if not HAS_TYPE_SYSTEM:
+        return {
+            "is_valid": False,
+            "errors": ["Type system not available"],
+            "warnings": [],
+            "suggestions": [],
+            "summary": "Validation unavailable"
+        }
+    
+    try:
+        # Create ElementType instance for validation
+        element_type = ElementType(**type_data)
+        
+        # Initialize validator
+        validator = TypeValidator()
+        
+        # Perform validation
+        validation_result = validator.validate_all(element_type)
+        
+        return {
+            "is_valid": validation_result.is_valid,
+            "errors": [issue.message for issue in validation_result.issues if issue.severity.value == "error"],
+            "warnings": [issue.message for issue in validation_result.issues if issue.severity.value == "warning"],
+            "suggestions": [issue.message for issue in validation_result.issues if issue.severity.value == "suggestion"],
+            "summary": validation_result.get_summary(),
+            "detailed_report": validation_result.get_detailed_report()
+        }
+        
+    except Exception as e:
+        return {
+            "is_valid": False,
+            "errors": [f"Validation error: {str(e)}"],
+            "warnings": [],
+            "suggestions": [],
+            "summary": "Validation failed"
+        }
+
+
+def get_type_creation_stats() -> Dict[str, Any]:
+    """
+    Get performance statistics for LLM type creation operations.
+    
+    Returns:
+        Dictionary with performance metrics
+    """
+    base_stats = get_llm_performance_stats()
+    
+    if HAS_TYPE_SYSTEM:
+        # Add type-specific stats if available
+        try:
+            # This would be populated by the LLMTypeCreator instances
+            return {
+                **base_stats,
+                "type_creation_enabled": True,
+                "type_system_available": True
+            }
+        except:
+            pass
+    
+    return {
+        **base_stats,
+        "type_creation_enabled": False,
+        "type_system_available": HAS_TYPE_SYSTEM
+    }
+
+
+# ==================== Type Creation Helper Functions ====================
+
+def list_available_templates() -> List[Dict[str, str]]:
+    """
+    List available type templates for common categories.
+    
+    Returns:
+        List of template information dictionaries
+    """
+    templates = [
+        {
+            "id": "glyph_template",
+            "name": "Glyph Template",
+            "description": "Template for creating symbol/glyph types",
+            "category": "glyphs",
+            "parameters": ["complexity", "style", "ink_density"]
+        },
+        {
+            "id": "creature_part_template", 
+            "name": "Creature Part Template",
+            "description": "Template for creating creature components",
+            "category": "creatures",
+            "parameters": ["size", "mood", "species_type", "detail_level"]
+        },
+        {
+            "id": "background_template",
+            "name": "Background Template", 
+            "description": "Template for creating background/texture types",
+            "category": "backgrounds",
+            "parameters": ["darkness", "texture", "atmosphere", "color_palette"]
+        },
+        {
+            "id": "effect_template",
+            "name": "Effect Template",
+            "description": "Template for creating visual effects",
+            "category": "effects", 
+            "parameters": ["intensity", "duration", "color", "size"]
+        }
+    ]
+    
+    return templates
+
+
+def get_example_type_definitions() -> List[Dict[str, Any]]:
+    """
+    Get example element type definitions for reference.
+    
+    Returns:
+        List of example type definitions
+    """
+    examples = [
+        {
+            "id": "mystical_glyph_example",
+            "name": "Mystical Glyph",
+            "description": "Ancient symbols with mystical properties, featuring complex geometric patterns",
+            "category": "glyphs",
+            "tags": ["mystical", "ancient", "symbol", "geometric", "complex"],
+            "render_strategy": {"engine": "pil", "generator_name": "sigil"},
+            "param_schema": {
+                "type": "object",
+                "properties": {
+                    "complexity": {
+                        "type": "integer",
+                        "minimum": 1,
+                        "maximum": 10,
+                        "default": 5,
+                        "description": "Geometric complexity of the symbol"
+                    },
+                    "mysticism_level": {
+                        "type": "float",
+                        "minimum": 0.0,
+                        "maximum": 1.0,
+                        "default": 0.7,
+                        "description": "Intensity of mystical properties"
+                    }
+                }
+            },
+            "version": "1.0.0"
+        },
+        {
+            "id": "void_parchment_example",
+            "name": "Void Parchment",
+            "description": "Dark parchment textures for mystical backgrounds, featuring aged paper with void-like properties",
+            "category": "backgrounds",
+            "tags": ["void", "parchment", "dark", "background", "aged", "textured"],
+            "render_strategy": {"engine": "pil", "generator_name": "parchment"},
+            "param_schema": {
+                "type": "object",
+                "properties": {
+                    "darkness": {
+                        "type": "float",
+                        "minimum": 0.0,
+                        "maximum": 1.0,
+                        "default": 0.8,
+                        "description": "Overall darkness of the background"
+                    },
+                    "texture_intensity": {
+                        "type": "float",
+                        "minimum": 0.0,
+                        "maximum": 1.0,
+                        "default": 0.6,
+                        "description": "Intensity of aged paper texture"
+                    }
+                }
+            },
+            "version": "1.0.0"
+        }
+    ]
+    
+    return examples
