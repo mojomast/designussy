@@ -1,0 +1,52 @@
+{
+  "name": "astral_portal_dsl",
+  "category": "glyphs",
+  "width": 700,
+  "height": 700,
+  "layers": [
+    {
+      "type": "background_noise",
+      "params": {
+        "parchment": false,
+        "intensity": 0.8
+      }
+    },
+    {
+      "type": "ring",
+      "params": {
+        "radius": 260,
+        "thickness": 3,
+        "glow": true
+      }
+    },
+    {
+      "type": "ring",
+      "params": {
+        "radius": 200,
+        "thickness": 2,
+        "glow": true
+      }
+    },
+    {
+      "type": "spiral",
+      "params": {
+        "turns": 4.0,
+        "thickness": 3,
+        "spacing": 7.0
+      }
+    },
+    {
+      "type": "starfield",
+      "params": {
+        "count": 120
+      }
+    },
+    {
+      "type": "splatter",
+      "params": {
+        "count": 40,
+        "max_radius": 6
+      }
+    }
+  ]
+}

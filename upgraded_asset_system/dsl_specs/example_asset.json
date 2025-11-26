@@ -1,0 +1,36 @@
+{
+  "name": "void_monolith",
+  "category": "backgrounds",
+  "width": 500,
+  "height": 800,
+  "layers": [
+    {
+      "type": "fill",
+      "color": "parchment"
+    },
+    {
+      "type": "shape",
+      "shape": "rect",
+      "rect": [150, 200, 350, 700],
+      "fill": "ink",
+      "variation": {
+        "jitter": 5
+      }
+    },
+    {
+      "type": "shape",
+      "shape": "circle",
+      "center": [250, 150],
+      "radius": 40,
+      "fill": "glow",
+      "variation": {
+        "size_variance": 0.2
+      }
+    },
+    {
+      "type": "noise",
+      "scale": 1.2,
+      "opacity": 50
+    }
+  ]
+}
