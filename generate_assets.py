@@ -1017,3 +1017,725 @@ if __name__ == "__main__":
         create_ink_nebula(i)
         create_ethereal_mist(i)
     print("Done! Assets generated in standardized structure.")
+
+# ===== 10 NEW HIGHLY DIVERSE ASSETS =====
+
+def create_void_portal(index=None):
+    seed_from_index(index, "void_portal")
+    
+    # Highly varied portal properties
+    portal_color = get_color_variant(index, (120, 80, 180, 200), 60)
+    num_rings = get_count_variant(index, 8, 5, 12)
+    particle_count = get_count_variant(index, 50, 30, 80)
+    swirl_intensity = get_size_variant(index, 1.0, 0.6)
+    rotation = get_rotation_variant(index)
+    portal_shape = get_count_variant(index, 0, 0, 2)  # 0=circle, 1=oval, 2=spiral
+    
+    width, height = 600, 600
+    img = Image.new('RGBA', (width, height), (0,0,0,0))
+    draw = ImageDraw.Draw(img)
+    cx, cy = width//2, height//2
+    
+    # Concentric rings with varied count and color
+    for i in range(num_rings):
+        radius = 50 + i * 25
+        ring_color = get_color_variant(index + i, portal_color, 20)
+        width_var = get_count_variant(index + i, 3, 2, 6)
+        draw.ellipse((cx-radius, cy-radius, cx+radius, cy+radius), 
+                    outline=ring_color, width=width_var)
+    
+    # Swirling particles with varied count and pattern
+    for _ in range(particle_count):
+        angle = random.uniform(0, 2*math.pi)
+        dist = random.uniform(0, 250)
+        px = cx + math.cos(angle + rotation) * dist * swirl_intensity
+        py = cy + math.sin(angle + rotation) * dist * swirl_intensity
+        p_size = random.randint(2, 8)
+        p_color = get_color_variant(index, (200, 150, 255, random.randint(100, 255)), 40)
+        draw.ellipse((px, py, px+p_size, py+p_size), fill=p_color)
+    
+    # Center vortex
+    vortex_size = get_count_variant(index, 40, 25, 60)
+    draw.ellipse((cx-vortex_size, cy-vortex_size, cx+vortex_size, cy+vortex_size), 
+                fill=(10, 10, 20, 255))
+    
+    img = img.filter(ImageFilter.GaussianBlur(2))
+    if index is not None:
+        save_asset(img, CATEGORIES["glyphs"], "void_portal", index)
+    return img
+
+def create_spectral_wisp(index=None):
+    seed_from_index(index, "spectral_wisp")
+    
+    # Varied wisp properties
+    wisp_color = get_color_variant(index, (180, 200, 220, 150), 50)
+    num_trails = get_count_variant(index, 5, 3, 8)
+    wisp_length = get_count_variant(index, 200, 150, 300)
+    wisp_width = get_count_variant(index, 30, 20, 45)
+    has_face = random.random() > 0.5
+    
+    width, height = 400, 600
+    img = Image.new('RGBA', (width, height), (0,0,0,0))
+    draw = ImageDraw.Draw(img)
+    cx = width//2
+    
+    # Main body - flowing ethereal shape
+    for i in range(num_trails):
+        points = []
+        y_start = 100 + i * (wisp_length // num_trails)
+        for j in range(20):
+            x = cx + math.sin(j * 0.3 + i) * wisp_width
+            y = y_start + j * 15
+            points.append((x, y))
+        trail_color = get_color_variant(index + i, wisp_color, 30)
+        draw.line(points, fill=trail_color, width=get_count_variant(index+i, 15, 10, 25))
+    
+    # Wisp head/core
+    head_size = get_count_variant(index, 50, 35, 70)
+    draw.ellipse((cx-head_size, 50, cx+head_size, 50+head_size*2), fill=wisp_color)
+    
+    # Optional face features
+    if has_face:
+        eye_color = get_color_variant(index, (100, 150, 200, 255), 40)
+        draw.ellipse((cx-20, 80, cx-10, 100), fill=eye_color)
+        draw.ellipse((cx+10, 80, cx+20, 100), fill=eye_color)
+    
+    img = img.filter(ImageFilter.GaussianBlur(3))
+    if index is not None:
+        save_asset(img, CATEGORIES["creatures"], "spectral_wisp", index)
+    return img
+
+def create_ancient_scroll(index=None):
+    seed_from_index(index, "ancient_scroll")
+    
+    # Varied scroll properties
+    scroll_color = get_color_variant(index, (200, 180, 140, 255), 40)
+    text_color = get_color_variant(index, (40, 30, 20, 200), 30)
+    num_text_lines = get_count_variant(index, 8, 5, 12)
+    num_runes = get_count_variant(index, 4, 2, 6)
+    scroll_curl = get_size_variant(index, 1.0, 0.4)
+    
+    width, height = 500, 700
+    img = Image.new('RGBA', (width, height), (0,0,0,0))
+    draw = ImageDraw.Draw(img)
+    cx = width//2
+    
+    # Scroll body with curl variation
+    scroll_width = int(350 * scroll_curl)
+    draw.rectangle((cx-scroll_width//2, 100, cx+scroll_width//2, height-100), 
+                  fill=scroll_color)
+    
+    # Top and bottom rolls
+    roll_height = get_count_variant(index, 30, 20, 45)
+    draw.rectangle((cx-scroll_width//2, 80, cx+scroll_width//2, 100), fill=scroll_color)
+    draw.rectangle((cx-scroll_width//2, height-100, cx+scroll_width//2, height-80), 
+                  fill=scroll_color)
+    
+    # Mystical text lines
+    line_spacing = (height - 250) // num_text_lines
+    for i in range(num_text_lines):
+        y = 130 + i * line_spacing
+        line_length = random.randint(scroll_width-100, scroll_width-50)
+        draw.line([(cx-line_length//2, y), (cx+line_length//2, y)], 
+                 fill=text_color, width=2)
+        
+        # Add random "rune" marks
+        for _ in range(random.randint(2, 5)):
+            rx = random.randint(cx-line_length//2, cx+line_length//2)
+            draw.ellipse((rx, y-3, rx+6, y+3), fill=text_color)
+    
+    # Decorative runes around edges
+    for i in range(num_runes):
+        angle = (360 / num_runes) * i
+        radius = scroll_width // 2 + 20
+        rx = cx + math.cos(math.radians(angle)) * radius
+        ry = height // 2 + math.sin(math.radians(angle)) * 200
+        rune_size = random.randint(15, 25)
+        draw.polygon([(rx, ry-rune_size), (rx+rune_size, ry), (rx, ry+rune_size), 
+                     (rx-rune_size, ry)], outline=text_color, width=2)
+    
+    img = img.filter(ImageFilter.GaussianBlur(0.5))
+    if index is not None:
+        save_asset(img, CATEGORIES["ui"], "ancient_scroll", index)
+    return img
+
+def create_shadow_beast(index=None):
+    seed_from_index(index, "shadow_beast")
+    
+    # Highly varied beast properties
+    shadow_color = get_color_variant(index, (20, 15, 25, 220), 15)
+    eye_color = get_color_variant(index, (200, 80, 100, 255), 60)
+    num_limbs = get_count_variant(index, 6, 4, 10)
+    beast_size = get_size_variant(index, 1.0, 0.4)
+    has_horns = random.random() > 0.5
+    has_wings = random.random() > 0.6
+    
+    width, height = 600, 700
+    img = Image.new('RGBA', (width, height), (0,0,0,0))
+    draw = ImageDraw.Draw(img)
+    cx, cy = width//2, height//2
+    
+    # Main body - amorphous shadow shape
+    body_width = int(150 * beast_size)
+    body_height = int(180 * beast_size)
+    draw.ellipse((cx-body_width, cy-body_height//2, cx+body_width, cy+body_height), 
+                fill=shadow_color)
+    
+    # Limbs/tentacles radiating outward
+    limb_spacing = 360 // num_limbs
+    for i in range(num_limbs):
+        angle = limb_spacing * i + get_rotation_variant(index + i)
+        limb_length = random.randint(80, 180)
+        limb_width = random.randint(12, 25)
+        
+        end_x = cx + math.cos(math.radians(angle)) * limb_length
+        end_y = cy + math.sin(math.radians(angle)) * limb_length
+        
+        # Wavy limb
+        points = []
+        for j in range(10):
+            t = j / 10
+            x = cx + (end_x - cx) * t + math.sin(j) * 10
+            y = cy + (end_y - cy) * t
+            points.append((x, y))
+        draw.line(points, fill=shadow_color, width=limb_width)
+    
+    # Glowing eyes
+    num_eyes = get_count_variant(index, 2, 1, 4)
+    eye_spacing = body_width // (num_eyes + 1)
+    for i in range(num_eyes):
+        eye_x = cx - body_width//2 + (i+1) * eye_spacing
+        eye_y = cy - body_height//4
+        eye_size = random.randint(12, 20)
+        draw.ellipse((eye_x-eye_size, eye_y-eye_size, eye_x+eye_size, eye_y+eye_size), 
+                    fill=eye_color)
+    
+    # Optional horns
+    if has_horns:
+        horn_count = random.randint(2, 4)
+        for i in range(horn_count):
+            hx = cx + random.randint(-body_width//2, body_width//2)
+            hy = cy - body_height
+            horn_height = random.randint(40, 80)
+            draw.polygon([(hx, hy), (hx-10, hy-horn_height), (hx+10, hy-horn_height)], 
+                        fill=shadow_color)
+    
+    # Optional wings
+    if has_wings:
+        wing_span = int(200 * beast_size)
+        # Left wing
+        draw.polygon([(cx-body_width, cy), (cx-wing_span, cy-100), (cx-body_width, cy+50)], 
+                    fill=(shadow_color[0], shadow_color[1], shadow_color[2], 100))
+        # Right wing
+        draw.polygon([(cx+body_width, cy), (cx+wing_span, cy-100), (cx+body_width, cy+50)], 
+                    fill=(shadow_color[0], shadow_color[1], shadow_color[2], 100))
+    
+    img = img.filter(ImageFilter.GaussianBlur(2))
+    if index is not None:
+        save_asset(img, CATEGORIES["creatures"], "shadow_beast", index)
+    return img
+
+def create_mystic_constellation(index=None):
+    seed_from_index(index, "mystic_constellation")
+    
+    # Varied constellation properties
+    star_color = get_color_variant(index, (200, 200, 255, 255), 50)
+    line_color = get_color_variant(index, (150, 150, 200, 150), 40)
+    num_stars = get_count_variant(index, 9, 6, 15)
+    pattern_type = get_count_variant(index, 0, 0, 3)  # Different patterns
+    rotation = get_rotation_variant(index)
+    
+    width, height = 500, 500
+    img = Image.new('RGBA', (width, height), (0,0,0,0))
+    draw = ImageDraw.Draw(img)
+    cx, cy = width//2, height//2
+    
+    # Generate star positions based on pattern
+    star_positions = []
+    if pattern_type == 0:  # Circular
+        for i in range(num_stars):
+            angle = math.radians((360 / num_stars) * i + rotation)
+            radius = random.randint(100, 180)
+            x = cx + math.cos(angle) * radius
+            y = cy + math.sin(angle) * radius
+            star_positions.append((x, y))
+    elif pattern_type == 1:  # Spiral
+        for i in range(num_stars):
+            angle = math.radians(i * 40 + rotation)
+            radius = 40 + i * 15
+            x = cx + math.cos(angle) * radius
+            y = cy + math.sin(angle) * radius
+            star_positions.append((x, y))
+    elif pattern_type == 2:  # Grid
+        grid_size = int(math.sqrt(num_stars))
+        spacing = 100
+        for i in range(grid_size):
+            for j in range(grid_size):
+                if len(star_positions) < num_stars:
+                    x = cx - spacing + j * (spacing * 2 // grid_size)
+                    y = cy - spacing + i * (spacing * 2 // grid_size)
+                    star_positions.append((x, y))
+    else:  # Random
+        for _ in range(num_stars):
+            x = cx + random.randint(-180, 180)
+            y = cy + random.randint(-180, 180)
+            star_positions.append((x, y))
+    
+    # Connect stars with lines
+    for i in range(len(star_positions) - 1):
+        draw.line([star_positions[i], star_positions[i+1]], fill=line_color, width=2)
+    if len(star_positions) > 2:
+        draw.line([star_positions[-1], star_positions[0]], fill=line_color, width=2)
+    
+    # Draw stars
+    for x, y in star_positions:
+        star_size = random.randint(6, 14)
+        # Four-pointed star
+        points = [
+            (x, y-star_size), (x+star_size//3, y-star_size//3),
+            (x+star_size, y), (x+star_size//3, y+star_size//3),
+            (x, y+star_size), (x-star_size//3, y+star_size//3),
+            (x-star_size, y), (x-star_size//3, y-star_size//3)
+        ]
+        draw.polygon(points, fill=star_color)
+        
+        # Glow
+        glow_color = (star_color[0], star_color[1], star_color[2], 80)
+        draw.ellipse((x-star_size*2, y-star_size*2, x+star_size*2, y+star_size*2), 
+                    fill=glow_color)
+    
+    img = img.filter(ImageFilter.GaussianBlur(1))
+    if index is not None:
+        save_asset(img, CATEGORIES["glyphs"], "mystic_constellation", index)
+    return img
+
+def create_ink_butterfly(index=None):
+    seed_from_index(index, "ink_butterfly")
+    
+    # Varied butterfly properties
+    wing_color = get_color_variant(index, (80, 60, 100, 200), 50)
+    accent_color = get_color_variant(index, (180, 150, 200, 220), 60)
+    wing_span = get_count_variant(index, 200, 150, 280)
+    wing_pattern = get_count_variant(index, 0, 0, 3)
+    num_spots = get_count_variant(index, 6, 3, 10)
+    
+    width, height = 600, 500
+    img = Image.new('RGBA', (width, height), (0,0,0,0))
+    draw = ImageDraw.Draw(img)
+    cx, cy = width//2, height//2
+    
+    # Body
+    body_length = get_count_variant(index, 120, 100, 150)
+    draw.ellipse((cx-10, cy-body_length//2, cx+10, cy+body_length//2), 
+                fill=(20, 20, 25, 255))
+    
+    # Antennae
+    antenna_length = random.randint(40, 70)
+    draw.line([(cx-5, cy-body_length//2), (cx-20, cy-body_length//2-antenna_length)], 
+             fill=(20, 20, 25, 255), width=3)
+    draw.line([(cx+5, cy-body_length//2), (cx+20, cy-body_length//2-antenna_length)], 
+             fill=(20, 20, 25, 255), width=3)
+    
+    # Wings - upper
+    wing_height = wing_span // 2
+    # Left upper wing
+    left_upper = [(cx-10, cy-20), (cx-wing_span//2, cy-wing_height), 
+                  (cx-wing_span//3, cy+20)]
+    draw.polygon(left_upper, fill=wing_color, outline=accent_color, width=3)
+    
+    # Right upper wing
+    right_upper = [(cx+10, cy-20), (cx+wing_span//2, cy-wing_height), 
+                   (cx+wing_span//3, cy+20)]
+    draw.polygon(right_upper, fill=wing_color, outline=accent_color, width=3)
+    
+    # Lower wings
+    # Left lower
+    left_lower = [(cx-10, cy+20), (cx-wing_span//3, cy+wing_height), 
+                  (cx-wing_span//4, cy+50)]
+    draw.polygon(left_lower, fill=wing_color, outline=accent_color, width=3)
+    
+    # Right lower
+    right_lower = [(cx+10, cy+20), (cx+wing_span//3, cy+wing_height), 
+                   (cx+wing_span//4, cy+50)]
+    draw.polygon(right_lower, fill=wing_color, outline=accent_color, width=3)
+    
+    # Wing patterns/spots
+    for _ in range(num_spots//2):
+        # Left wing spots
+        sx = random.randint(cx-wing_span//2+30, cx-30)
+        sy = random.randint(cy-wing_height+30, cy+30)
+        spot_size = random.randint(8, 18)
+        draw.ellipse((sx, sy, sx+spot_size, sy+spot_size), fill=accent_color)
+        
+        # Mirror to right wing
+        sx_mirror = cx + (cx - sx)
+        draw.ellipse((sx_mirror-spot_size, sy, sx_mirror, sy+spot_size), fill=accent_color)
+    
+    img = img.filter(ImageFilter.GaussianBlur(1))
+    if index is not None:
+        save_asset(img, CATEGORIES["creatures"], "ink_butterfly", index)
+    return img
+
+def create_void_anchor(index=None):
+    seed_from_index(index, "void_anchor")
+    
+    # Varied anchor properties
+    anchor_color = get_color_variant(index, (100, 100, 120, 255), 40)
+    chain_color = get_color_variant(index, (80, 80, 100, 255), 30)
+    num_chain_links = get_count_variant(index, 6, 4, 10)
+    anchor_style = get_count_variant(index, 0, 0, 2)  # Different anchor designs
+    has_runes = random.random() > 0.5
+    
+    width, height = 400, 600
+    img = Image.new('RGBA', (width, height), (0,0,0,0))
+    draw = ImageDraw.Draw(img)
+    cx = width//2
+    
+    # Chain links
+    link_spacing = 40
+    for i in range(num_chain_links):
+        cy_link = 50 + i * link_spacing
+        link_size = random.randint(15, 22)
+        draw.ellipse((cx-link_size, cy_link-link_size//2, cx+link_size, cy_link+link_size//2), 
+                    outline=chain_color, width=4)
+    
+    # Anchor top position
+    anchor_top = 50 + num_chain_links * link_spacing
+    
+    # Anchor shank (vertical bar)
+    shank_height = get_count_variant(index, 200, 150, 250)
+    draw.rectangle((cx-10, anchor_top, cx+10, anchor_top+shank_height), 
+                  fill=anchor_color)
+    
+    # Anchor crown (top horizontal)
+    crown_width = get_count_variant(index, 60, 45, 80)
+    draw.rectangle((cx-crown_width, anchor_top-8, cx+crown_width, anchor_top+8), 
+                  fill=anchor_color)
+    
+    # Anchor flukes (bottom hooks)
+    fluke_span = get_count_variant(index, 120, 90, 160)
+    fluke_curve = get_count_variant(index, 40, 30, 60)
+    
+    if anchor_style == 0:  # Traditional
+        # Left fluke
+        draw.polygon([
+            (cx-10, anchor_top+shank_height),
+            (cx-fluke_span, anchor_top+shank_height-fluke_curve),
+            (cx-fluke_span+20, anchor_top+shank_height-fluke_curve-30),
+            (cx-30, anchor_top+shank_height-20)
+        ], fill=anchor_color)
+        
+        # Right fluke
+        draw.polygon([
+            (cx+10, anchor_top+shank_height),
+            (cx+fluke_span, anchor_top+shank_height-fluke_curve),
+            (cx+fluke_span-20, anchor_top+shank_height-fluke_curve-30),
+            (cx+30, anchor_top+shank_height-20)
+        ], fill=anchor_color)
+    elif anchor_style == 1:  # Modern
+        # Straight flukes
+        draw.polygon([
+            (cx, anchor_top+shank_height),
+            (cx-fluke_span//2, anchor_top+shank_height+40),
+            (cx-fluke_span//2+15, anchor_top+shank_height+50)
+        ], fill=anchor_color)
+        draw.polygon([
+            (cx, anchor_top+shank_height),
+            (cx+fluke_span//2, anchor_top+shank_height+40),
+            (cx+fluke_span//2-15, anchor_top+shank_height+50)
+        ], fill=anchor_color)
+    else:  # Mystical
+        # Curved mystical flukes
+        points_left = [
+            (cx, anchor_top+shank_height),
+            (cx-fluke_span//2, anchor_top+shank_height+20),
+            (cx-fluke_span, anchor_top+shank_height-20),
+            (cx-fluke_span+20, anchor_top+shank_height-40)
+        ]
+        draw.line(points_left, fill=anchor_color, width=20)
+        
+        points_right = [
+            (cx, anchor_top+shank_height),
+            (cx+fluke_span//2, anchor_top+shank_height+20),
+            (cx+fluke_span, anchor_top+shank_height-20),
+            (cx+fluke_span-20, anchor_top+shank_height-40)
+        ]
+        draw.line(points_right, fill=anchor_color, width=20)
+    
+    # Optional runes on shank
+    if has_runes:
+        num_runes = random.randint(3, 6)
+        rune_spacing = shank_height // (num_runes + 1)
+        for i in range(num_runes):
+            ry = anchor_top + (i+1) * rune_spacing
+            rune_type = random.randint(0, 3)
+            rune_color = get_color_variant(index, (180, 160, 200, 200), 30)
+            
+            if rune_type == 0:
+                draw.line([(cx-6, ry), (cx+6, ry)], fill=rune_color, width=2)
+            elif rune_type == 1:
+                draw.ellipse((cx-4, ry-4, cx+4, ry+4), outline=rune_color, width=2)
+            elif rune_type == 2:
+                draw.polygon([(cx, ry-6), (cx+6, ry+6), (cx-6, ry+6)], 
+                           outline=rune_color, width=2)
+            else:
+                draw.line([(cx, ry-6), (cx, ry+6)], fill=rune_color, width=2)
+    
+    img = img.filter(ImageFilter.GaussianBlur(0.5))
+    if index is not None:
+        save_asset(img, CATEGORIES["ui"], "void_anchor", index)
+    return img
+
+def create_ethereal_torch(index=None):
+    seed_from_index(index, "ethereal_torch")
+    
+    # Varied torch properties
+    flame_color = get_color_variant(index, (180, 120, 220, 200), 70)
+    stick_color = get_color_variant(index, (80, 70, 60, 255), 30)
+    flame_height = get_count_variant(index, 150, 100, 220)
+    flame_width = get_count_variant(index, 80, 60, 120)
+    num_particles = get_count_variant(index, 20, 10, 35)
+    flame_style = get_count_variant(index, 0, 0, 2)
+    
+    width, height = 400, 600
+    img = Image.new('RGBA', (width, height), (0,0,0,0))
+    draw = ImageDraw.Draw(img)
+    cx = width//2
+    
+    # Torch stick
+    stick_top = height - 200
+    stick_width = get_count_variant(index, 15, 12, 20)
+    draw.rectangle((cx-stick_width//2, stick_top, cx+stick_width//2, height-50), 
+                  fill=stick_color)
+    
+    # Wrapping/texture on stick
+    num_wraps = random.randint(3, 6)
+    for i in range(num_wraps):
+        wrap_y = stick_top + 20 + i * 30
+        wrap_color = get_color_variant(index+i, (60, 50, 40, 255), 20)
+        draw.line([(cx-stick_width//2, wrap_y), (cx+stick_width//2, wrap_y)], 
+                 fill=wrap_color, width=6)
+    
+    # Flame base
+    flame_base_y = stick_top - 20
+    
+    if flame_style == 0:  # Pointed flame
+        flame_points = [
+            (cx, flame_base_y - flame_height),
+            (cx + flame_width//2, flame_base_y - flame_height//2),
+            (cx + flame_width//3, flame_base_y),
+            (cx - flame_width//3, flame_base_y),
+            (cx - flame_width//2, flame_base_y - flame_height//2)
+        ]
+        draw.polygon(flame_points, fill=flame_color)
+    elif flame_style == 1:  # Wispy flame
+        # Multiple overlapping ellipses
+        for i in range(5):
+            offset_x = random.randint(-20, 20)
+            offset_y = i * (flame_height // 6)
+            ellipse_width = flame_width - i * 10
+            ellipse_height = flame_height // 5
+            draw.ellipse((cx+offset_x-ellipse_width//2, flame_base_y-offset_y-ellipse_height,
+                         cx+offset_x+ellipse_width//2, flame_base_y-offset_y), 
+                        fill=flame_color)
+    else:  # Ethereal flame
+        # Draw as wavy line
+        points = []
+        for i in range(20):
+            y = flame_base_y - (i * flame_height // 20)
+            x = cx + math.sin(i * 0.5) * (flame_width // 2)
+            points.append((x, y))
+        draw.line(points, fill=flame_color, width=flame_width//2)
+    
+    # Floating particles/sparks
+    for _ in range(num_particles):
+        px = cx + random.randint(-flame_width, flame_width)
+        py = flame_base_y - random.randint(0, flame_height + 100)
+        p_size = random.randint(3, 8)
+        p_color = get_color_variant(index, (255, 200, 150, random.randint(150, 255)), 60)
+        draw.ellipse((px, py, px+p_size, py+p_size), fill=p_color)
+    
+    img = img.filter(ImageFilter.GaussianBlur(2))
+    if index is not None:
+        save_asset(img, CATEGORIES["ui"], "ethereal_torch", index)
+    return img
+
+def create_crystal_shard(index=None):
+    seed_from_index(index, "crystal_shard")
+    
+    # Varied crystal properties
+    crystal_color = get_color_variant(index, (120, 180, 255, 200), 60)
+    glow_color = get_color_variant(index, (180, 220, 255, 150), 50)
+    num_faces = get_count_variant(index, 6, 4, 10)
+    shard_height = get_count_variant(index, 300, 200, 400)
+    rotation = get_rotation_variant(index)
+    num_inner_facets = get_count_variant(index, 4, 2, 7)
+    
+    width, height = 400, 600
+    img = Image.new('RGBA', (width, height), (0,0,0,0))
+    draw = ImageDraw.Draw(img)
+    cx = width//2
+    cy_base = height - 100
+    cy_tip = cy_base - shard_height
+    
+    # Main crystal outline
+    shard_width = get_count_variant(index, 100, 70, 140)
+    crystal_points = [(cx, cy_tip)]  # Tip
+    
+    # Generate faceted edges
+    for i in range(num_faces):
+        angle_offset = (i / num_faces) * 180 - 90 + rotation
+        height_pos = cy_tip + (i / num_faces) * shard_height
+        width_pos = cx + math.cos(math.radians(angle_offset)) * (shard_width * (i / num_faces))
+        crystal_points.append((width_pos, height_pos))
+    
+    crystal_points.append((cx + shard_width//2, cy_base))
+    crystal_points.append((cx - shard_width//2, cy_base))
+    
+    # Mirror the points for other side
+    for i in range(num_faces-1, -1, -1):
+        angle_offset = (i / num_faces) * 180 - 90 - rotation
+        height_pos = cy_tip + (i / num_faces) * shard_height
+        width_pos = cx + math.cos(math.radians(angle_offset)) * (shard_width * (i / num_faces))
+        crystal_points.append((width_pos, height_pos))
+    
+    draw.polygon(crystal_points, fill=crystal_color, outline=glow_color, width=3)
+    
+    # Inner facet lines
+    for i in range(num_inner_facets):
+        y_pos = cy_tip + (i+1) * (shard_height // (num_inner_facets + 1))
+        x_offset = (shard_width // 2) * ((num_inner_facets - i) / num_inner_facets)
+        draw.line([(cx - x_offset, y_pos), (cx + x_offset, y_pos)], 
+                 fill=glow_color, width=2)
+        draw.line([(cx, cy_tip), (cx - x_offset, y_pos)], fill=glow_color, width=1)
+        draw.line([(cx, cy_tip), (cx + x_offset, y_pos)], fill=glow_color, width=1)
+    
+    # Glow effect
+    for r in range(5):
+        glow_alpha = int(100 / (r+1))
+        glow = (glow_color[0], glow_color[1], glow_color[2], glow_alpha)
+        draw.ellipse((cx-shard_width-r*10, cy_tip-r*10, 
+                     cx+shard_width+r*10, cy_base+r*10), 
+                    outline=glow, width=2)
+    
+    img = img.filter(ImageFilter.GaussianBlur(1.5))
+    if index is not None:
+        save_asset(img, CATEGORIES["backgrounds"], "crystal_shard", index)
+    return img
+
+def create_runic_circle(index=None):
+    seed_from_index(index, "runic_circle")
+    
+    # Highly varied circle properties
+    circle_color = get_color_variant(index, (160, 140, 180, 255), 50)
+    rune_color = get_color_variant(index, (200, 180, 220, 255), 40)
+    num_rings = get_count_variant(index, 4, 2, 6)
+    num_runes = get_count_variant(index, 8, 6, 12)
+    num_symbols = get_count_variant(index, 16, 10, 24)
+    rotation = get_rotation_variant(index)
+    has_center_glyph = random.random() > 0.5
+    
+    width, height = 600, 600
+    img = Image.new('RGBA', (width, height), (0,0,0,0))
+    draw = ImageDraw.Draw(img)
+    cx, cy = width//2, height//2
+    
+    # Concentric circles
+    base_radius = 250
+    for i in range(num_rings):
+        radius = base_radius - (i * (base_radius // (num_rings + 1)))
+        line_width = get_count_variant(index+i, 3, 2, 5)
+        draw.ellipse((cx-radius, cy-radius, cx+radius, cy+radius), 
+                    outline=circle_color, width=line_width)
+    
+    # Radial lines
+    num_lines = get_count_variant(index, 12, 8, 16)
+    for i in range(num_lines):
+        angle = math.radians((360 / num_lines) * i + rotation)
+        inner_radius = base_radius // num_rings
+        x1 = cx + math.cos(angle) * inner_radius
+        y1 = cy + math.sin(angle) * inner_radius
+        x2 = cx + math.cos(angle) * base_radius
+        y2 = cy + math.sin(angle) * base_radius
+        draw.line([(x1, y1), (x2, y2)], fill=circle_color, width=2)
+    
+    # Runes around outer edge
+    rune_radius = base_radius + 20
+    rune_spacing = 360 / num_runes
+    for i in range(num_runes):
+        angle = math.radians(i * rune_spacing + rotation)
+        rx = cx + math.cos(angle) * rune_radius
+        ry = cy + math.sin(angle) * rune_radius
+        
+        # Different rune types
+        rune_type = random.randint(0, 5)
+        rune_size = random.randint(15, 25)
+        
+        if rune_type == 0:  # Triangle
+            draw.polygon([
+                (rx, ry-rune_size), 
+                (rx+rune_size, ry+rune_size), 
+                (rx-rune_size, ry+rune_size)
+            ], outline=rune_color, width=2)
+        elif rune_type == 1:  # Circle
+            draw.ellipse((rx-rune_size//2, ry-rune_size//2, 
+                         rx+rune_size//2, ry+rune_size//2), 
+                        outline=rune_color, width=2)
+        elif rune_type == 2:  # Cross
+            draw.line([(rx-rune_size, ry), (rx+rune_size, ry)], 
+                     fill=rune_color, width=2)
+            draw.line([(rx, ry-rune_size), (rx, ry+rune_size)], 
+                     fill=rune_color, width=2)
+        elif rune_type == 3:  # Diamond
+            draw.polygon([
+                (rx, ry-rune_size), 
+                (rx+rune_size, ry), 
+                (rx, ry+rune_size), 
+                (rx-rune_size, ry)
+            ], outline=rune_color, width=2)
+        elif rune_type == 4:  # Star
+            draw.polygon([
+                (rx, ry-rune_size),
+                (rx+rune_size//3, ry-rune_size//3),
+                (rx+rune_size, ry),
+                (rx+rune_size//3, ry+rune_size//3),
+                (rx, ry+rune_size),
+                (rx-rune_size//3, ry+rune_size//3),
+                (rx-rune_size, ry),
+                (rx-rune_size//3, ry-rune_size//3)
+            ], outline=rune_color, width=2)
+        else:  # Line
+            angle2 = angle + math.radians(random.randint(-30, 30))
+            lx = rx + math.cos(angle2) * rune_size
+            ly = ry + math.sin(angle2) * rune_size
+            draw.line([(rx, ry), (lx, ly)], fill=rune_color, width=3)
+    
+    # Small symbols in between rings
+    symbol_ring_radius = base_radius - (base_radius // num_rings) // 2
+    symbol_spacing = 360 / num_symbols
+    for i in range(num_symbols):
+        angle = math.radians(i * symbol_spacing + rotation + 180/num_symbols)
+        sx = cx + math.cos(angle) * symbol_ring_radius
+        sy = cy + math.sin(angle) * symbol_ring_radius
+        symbol_size = random.randint(5, 10)
+        draw.ellipse((sx-symbol_size, sy-symbol_size, sx+symbol_size, sy+symbol_size), 
+                    fill=rune_color)
+    
+    # Central glyph
+    if has_center_glyph:
+        glyph_size = base_radius // (num_rings + 1)
+        # Complex central pattern
+        for i in range(6):
+            angle = math.radians(i * 60 + rotation)
+            gx = cx + math.cos(angle) * glyph_size
+            gy = cy + math.sin(angle) * glyph_size
+            draw.line([(cx, cy), (gx, gy)], fill=rune_color, width=3)
+            draw.ellipse((gx-5, gy-5, gx+5, gy+5), fill=rune_color)
+        
+        # Center point
+        draw.ellipse((cx-10, cy-10, cx+10, cy+10), fill=rune_color)
+    
+    img = img.filter(ImageFilter.GaussianBlur(0.5))
+    if index is not None:
+        save_asset(img, CATEGORIES["glyphs"], "runic_circle", index)
+    return img
