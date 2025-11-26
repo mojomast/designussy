@@ -1,6 +1,6 @@
-import os
+aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaimport os
 import numpy as np
-from PIL import Image, ImageDraw, ImageFilter, ImageEnhance
+from PIL import Image, ImageDraw, ImageFilter, ImageEnhance, ImageOps
 import random
 import math
 
@@ -346,28 +346,38 @@ def create_void_orb(index=None):
     return img
 
 def create_void_manta(index=None):
+    seed_from_index(index, "void_manta")
+    
+    # Vary manta properties
+    ink_color = get_color_variant(index, (10, 10, 15, 230), 20)
+    glow_color = get_color_variant(index, (180, 160, 255, 150), 40)
+    body_width = get_count_variant(index, 180, 150, 220)
+    body_height = get_count_variant(index, 150, 120, 180)
+    wing_extension = get_count_variant(index, 220, 180, 260)
+    tail_length = get_count_variant(index, 200, 150, 250)
+    tail_width = get_count_variant(index, 5, 3, 8)
+    
     width, height = 600, 600
     img = Image.new('RGBA', (width, height), (0, 0, 0, 0))
     draw = ImageDraw.Draw(img)
     
     cx, cy = width // 2, height // 2
-    ink_color = (10, 10, 15, 230)
-    glow_color = (180, 160, 255, 150)
     
-    # Body (Diamond/Kite shape)
-    points = [(cx, cy-150), (cx+180, cy), (cx, cy+150), (cx-180, cy)]
+    # Body (Diamond/Kite shape) with varied size
+    points = [(cx, cy-body_height), (cx+body_width, cy), (cx, cy+body_height), (cx-body_width, cy)]
     draw.polygon(points, fill=ink_color)
     
-    # Tail
-    draw.line([(cx, cy+150), (cx, cy+350)], fill=ink_color, width=5)
+    # Tail with varied length and width
+    draw.line([(cx, cy+body_height), (cx, cy+body_height+tail_length)], fill=ink_color, width=tail_width)
     
-    # Wings/Fins details
-    draw.polygon([(cx, cy-150), (cx+220, cy-20), (cx+180, cy)], fill=ink_color)
-    draw.polygon([(cx, cy-150), (cx-220, cy-20), (cx-180, cy)], fill=ink_color)
+    # Wings/Fins details with varied extension
+    draw.polygon([(cx, cy-body_height), (cx+wing_extension, cy-20), (cx+body_width, cy)], fill=ink_color)
+    draw.polygon([(cx, cy-body_height), (cx-wing_extension, cy-20), (cx-body_width, cy)], fill=ink_color)
 
-    # Eyes
-    draw.ellipse((cx-40, cy-80, cx-20, cy-60), fill=glow_color)
-    draw.ellipse((cx+20, cy-80, cx+40, cy-60), fill=glow_color)
+    # Eyes with varied color and position
+    eye_offset = body_width // 4
+    draw.ellipse((cx-eye_offset-20, cy-80, cx-eye_offset, cy-60), fill=glow_color)
+    draw.ellipse((cx+eye_offset, cy-80, cx+eye_offset+20, cy-60), fill=glow_color)
     
     # Blur for ethereal effect
     img = img.filter(ImageFilter.GaussianBlur(2))
@@ -413,6 +423,15 @@ def create_ink_crab(index=None):
     return img
 
 def create_mystic_eye(index=None):
+    seed_from_index(index, "mystic_eye")
+    
+    # Vary eye properties for diversity
+    iris_color = get_color_variant(index, (100, 50, 150, 200), 60)
+    pupil_shape = get_count_variant(index, 0, 0, 2)  # 0=circle, 1=vertical, 2=horizontal
+    ray_count = get_count_variant(index, 18, 12, 24)
+    ray_spacing = 360 // ray_count
+    rotation = get_rotation_variant(index)
+    
     width, height = 400, 400
     img = Image.new('RGBA', (width, height), (0, 0, 0, 0))
     draw = ImageDraw.Draw(img)
@@ -420,20 +439,24 @@ def create_mystic_eye(index=None):
     cx, cy = width // 2, height // 2
     
     # Eye shape
-    draw.pieslice((cx-150, cy-100, cx+150, cy+100), 0, 180, fill=(20, 20, 20, 255))
-    draw.pieslice((cx-150, cy-100, cx+150, cy+100), 180, 360, fill=(20, 20, 20, 255)) # Full ellipse essentially but using arcs for style if needed, actually simple ellipse is better
-    
+    draw.ellipse((cx-150, cy-100, cx+150, cy+100), fill=(20, 20, 20, 255))
     draw.ellipse((cx-120, cy-70, cx+120, cy+70), outline=(200, 200, 200, 255), width=3)
     
-    # Iris
-    draw.ellipse((cx-40, cy-40, cx+40, cy+40), fill=(100, 50, 150, 200))
+    # Iris with varied color
+    iris_size = get_count_variant(index, 40, 30, 50)
+    draw.ellipse((cx-iris_size, cy-iris_size, cx+iris_size, cy+iris_size), fill=iris_color)
     
-    # Pupil
-    draw.ellipse((cx-15, cy-25, cx+15, cy+25), fill=(255, 255, 255, 255))
+    # Pupil with varied shape
+    if pupil_shape == 0:
+        draw.ellipse((cx-15, cy-15, cx+15, cy+15), fill=(255, 255, 255, 255))
+    elif pupil_shape == 1:
+        draw.ellipse((cx-8, cy-25, cx+8, cy+25), fill=(255, 255, 255, 255))
+    else:
+        draw.ellipse((cx-25, cy-8, cx+25, cy+8), fill=(255, 255, 255, 255))
     
-    # Rays/Lashes
-    for i in range(0, 360, 20):
-        angle = math.radians(i)
+    # Rays/Lashes with varied count and rotation
+    for i in range(0, 360, ray_spacing):
+        angle = math.radians(i + rotation)
         x1 = cx + math.cos(angle) * 80
         y1 = cy + math.sin(angle) * 50
         x2 = cx + math.cos(angle) * 140
@@ -447,21 +470,31 @@ def create_mystic_eye(index=None):
     return img
 
 def create_broken_chain(index=None):
+    seed_from_index(index, "broken_chain")
+    
+    # Vary chain properties
+    chain_color = get_color_variant(index, (30, 30, 35, 255), 30)
+    num_links = get_count_variant(index, 5, 4, 7)
+    broken_link = get_count_variant(index, num_links // 2, 1, num_links - 1)
+    link_width = get_count_variant(index, 8, 6, 10)
+    link_size = get_count_variant(index, 20, 15, 25)
+    
     width, height = 200, 600
     img = Image.new('RGBA', (width, height), (0, 0, 0, 0))
     draw = ImageDraw.Draw(img)
     
     cx = width // 2
-    chain_color = (30, 30, 35, 255)
+    link_spacing = (height - 200) // (num_links - 1)
     
-    # Links
-    for i in range(5):
-        cy = 100 + i * 80
-        if i == 2: # Broken link
-            draw.arc((cx-20, cy-30, cx+20, cy+30), 190, 350, fill=chain_color, width=8)
-            draw.arc((cx-20, cy-30, cx+20, cy+30), 10, 170, fill=chain_color, width=8)
+    # Links with varied broken position
+    for i in range(num_links):
+        cy = 100 + i * link_spacing
+        if i == broken_link: # Broken link
+            angle_gap = random.randint(20, 60)
+            draw.arc((cx-link_size, cy-30, cx+link_size, cy+30), 180+angle_gap, 360-angle_gap, fill=chain_color, width=link_width)
+            draw.arc((cx-link_size, cy-30, cx+link_size, cy+30), angle_gap, 180-angle_gap, fill=chain_color, width=link_width)
         else:
-            draw.ellipse((cx-20, cy-30, cx+20, cy+30), outline=chain_color, width=8)
+            draw.ellipse((cx-link_size, cy-30, cx+link_size, cy+30), outline=chain_color, width=link_width)
             
     img = img.filter(ImageFilter.GaussianBlur(1))
     
@@ -502,17 +535,29 @@ def create_floating_island(index=None):
     return img
 
 def create_rune_stone(index=None):
+    seed_from_index(index, "rune_stone")
+    
+    # Vary rune stone properties
+    stone_color = get_color_variant(index, (180, 180, 200, 255), 40)
+    line_color = get_color_variant(index, (100, 100, 150, 255), 50)
+    num_lines = get_count_variant(index, 8, 5, 12)
+    stone_radius = get_count_variant(index, 60, 50, 70)
+    line_length = get_count_variant(index, 70, 60, 85)
+    rotation = get_rotation_variant(index)
+    
     width, height = 200, 200
     img = Image.new('RGBA', (width, height), (0,0,0,0))
     draw = ImageDraw.Draw(img)
     cx, cy = width//2, height//2
-    stone_color = (180, 180, 200, 255)
-    draw.ellipse((cx-60, cy-60, cx+60, cy+60), fill=stone_color)
-    for i in range(8):
-        angle = math.radians(i*45)
-        x = cx + math.cos(angle)*70
-        y = cy + math.sin(angle)*70
-        draw.line((cx, cy, x, y), fill=(100,100,150,255), width=3)
+    
+    draw.ellipse((cx-stone_radius, cy-stone_radius, cx+stone_radius, cy+stone_radius), fill=stone_color)
+    
+    for i in range(num_lines):
+        angle = math.radians((360 / num_lines) * i + rotation)
+        x = cx + math.cos(angle)*line_length
+        y = cy + math.sin(angle)*line_length
+        draw.line((cx, cy, x, y), fill=line_color, width=3)
+    
     img = img.filter(ImageFilter.GaussianBlur(1))
     if index is not None:
         save_asset(img, CATEGORIES["glyphs"], "rune_stone", index)
@@ -534,47 +579,103 @@ def create_ink_splatter(index=None):
     return img
 
 def create_mystic_frame(index=None):
+    seed_from_index(index, "mystic_frame")
+    
+    # Vary frame properties
+    frame_color = get_color_variant(index, (150, 120, 200, 255), 50)
+    num_layers = get_count_variant(index, 5, 3, 7)
+    outer_width = get_count_variant(index, 8, 5, 12)
+    corner_style = get_count_variant(index, 0, 0, 2)  # 0=square, 1=rounded, 2=ornate
+    
     width, height = 500, 500
     img = Image.new('RGBA', (width, height), (0,0,0,0))
     draw = ImageDraw.Draw(img)
-    frame_color = (150, 120, 200, 255)
-    draw.rectangle((20,20,width-20,height-20), outline=frame_color, width=8)
-    for i in range(5):
-        offset = 20 + i*30
+    
+    # Outer frame
+    draw.rectangle((20,20,width-20,height-20), outline=frame_color, width=outer_width)
+    
+    # Inner layers
+    layer_spacing = (width // 2 - 40) // num_layers
+    for i in range(num_layers):
+        offset = 20 + (i+1)*layer_spacing
         draw.rectangle((offset, offset, width-offset, height-offset), outline=frame_color, width=2)
+    
+    # Add corner decorations based on style
+    if corner_style >= 1:
+        corner_size = 30
+        for cx, cy in [(40, 40), (width-40, 40), (40, height-40), (width-40, height-40)]:
+            draw.ellipse((cx-corner_size//2, cy-corner_size//2, cx+corner_size//2, cy+corner_size//2), 
+                        outline=frame_color, width=2)
+    
     img = img.filter(ImageFilter.GaussianBlur(1))
     if index is not None:
         save_asset(img, CATEGORIES["ui"], "mystic_frame", index)
     return img
 
 def create_void_crystal(index=None):
+    seed_from_index(index, "void_crystal")
+    
+    # Vary crystal properties for diversity
+    num_sides = get_count_variant(index, 6, 5, 8)
+    crystal_color = get_color_variant(index, (100, 150, 255, 200), 50)
+    radius = int(120 * get_size_variant(index, 1.0, 0.3))
+    rotation = get_rotation_variant(index)
+    line_width = get_count_variant(index, 3, 2, 5)
+    
     width, height = 300, 300
     img = Image.new('RGBA', (width, height), (0,0,0,0))
     draw = ImageDraw.Draw(img)
     cx, cy = width//2, height//2
-    crystal_color = (100, 150, 255, 200)
+    
     points = []
-    for i in range(6):
-        angle = math.radians(i*60)
-        r = 120
+    for i in range(num_sides):
+        angle = math.radians((360 / num_sides) * i + rotation)
+        r = radius + random.randint(-10, 10)
         x = cx + math.cos(angle)*r
         y = cy + math.sin(angle)*r
         points.append((x,y))
-    draw.polygon(points, outline=crystal_color, fill=None)
+    draw.polygon(points, outline=crystal_color, width=line_width)
+    
+    # Add inner glow lines
+    for i in range(num_sides):
+        angle = math.radians((360 / num_sides) * i + rotation)
+        draw.line([(cx, cy), (cx + math.cos(angle)*radius*0.7, cy + math.sin(angle)*radius*0.7)], 
+                  fill=crystal_color, width=1)
+    
     img = img.filter(ImageFilter.GaussianBlur(1))
     if index is not None:
         save_asset(img, CATEGORIES["backgrounds"], "void_crystal", index)
     return img
 
 def create_ancient_key(index=None):
+    seed_from_index(index, "ancient_key")
+    
+    # Vary key properties
+    key_color = get_color_variant(index, (180, 150, 100, 255), 40)
+    num_teeth = get_count_variant(index, 3, 2, 5)
+    shaft_width = get_count_variant(index, 10, 8, 14)
+    head_size = get_count_variant(index, 30, 25, 40)
+    
     width, height = 200, 400
     img = Image.new('RGBA', (width, height), (0,0,0,0))
     draw = ImageDraw.Draw(img)
-    key_color = (180, 150, 100, 255)
-    draw.rectangle((width//2-10, 100, width//2+10, height-20), fill=key_color)
-    draw.ellipse((width//2-30, 60, width//2+30, 120), fill=key_color)
-    for i in range(3):
-        draw.rectangle((width//2-5 + i*10, height-20, width//2+5 + i*10, height), fill=key_color)
+    
+    # Shaft
+    draw.rectangle((width//2-shaft_width//2, 100, width//2+shaft_width//2, height-20), fill=key_color)
+    
+    # Head (circular or square)
+    if random.random() > 0.5:
+        draw.ellipse((width//2-head_size, 60, width//2+head_size, 120), fill=key_color)
+    else:
+        draw.rectangle((width//2-head_size, 60, width//2+head_size, 120), fill=key_color)
+    
+    # Teeth with varied count and spacing
+    tooth_spacing = (width - 40) // (num_teeth + 1)
+    for i in range(num_teeth):
+        x_pos = 20 + (i + 1) * tooth_spacing
+        tooth_height = random.randint(15, 30)
+        draw.rectangle((x_pos-5, height-tooth_height, x_pos+5, height), fill=key_color)
+    
     img = img.filter(ImageFilter.GaussianBlur(1))
     if index is not None:
         save_asset(img, CATEGORIES["ui"], "ancient_key", index)
@@ -767,26 +868,36 @@ def create_spectral_serpent(index=None):
     return img
 
 def create_void_hopper(index=None):
+    seed_from_index(index, "void_hopper")
+    
+    # Vary hopper properties
+    body_color = get_color_variant(index, (40, 40, 50, 255), 30)
+    glow_color = get_color_variant(index, (150, 100, 200, 255), 50)
+    body_width = get_count_variant(index, 60, 50, 75)
+    body_height = get_count_variant(index, 120, 100, 140)
+    leg_width = get_count_variant(index, 12, 8, 16)
+    leg_spread = get_count_variant(index, 40, 30, 55)
+    
     width, height = 400, 500
     img = Image.new('RGBA', (width, height), (0,0,0,0))
     draw = ImageDraw.Draw(img)
     cx, cy = width//2, height//2
-    body_color = (40, 40, 50, 255)
-    glow_color = (150, 100, 200, 255)
     
-    # Body
-    draw.ellipse((cx-60, cy-80, cx+60, cy+40), fill=body_color)
+    # Body with varied size
+    draw.ellipse((cx-body_width, cy-body_height//2, cx+body_width, cy+body_height//2), fill=body_color)
     
-    # Glowing core
-    draw.ellipse((cx-20, cy-30, cx+20, cy+10), fill=glow_color)
+    # Glowing core with varied color
+    core_size = body_width // 3
+    draw.ellipse((cx-core_size, cy-core_size//2, cx+core_size, cy+core_size//2), fill=glow_color)
     
-    # Legs
-    draw.line([(cx-40, cy+30), (cx-60, cy+120)], fill=body_color, width=12)
-    draw.line([(cx+40, cy+30), (cx+60, cy+120)], fill=body_color, width=12)
+    # Legs with varied spread and width
+    draw.line([(cx-leg_spread, cy+30), (cx-leg_spread-20, cy+120)], fill=body_color, width=leg_width)
+    draw.line([(cx+leg_spread, cy+30), (cx+leg_spread+20, cy+120)], fill=body_color, width=leg_width)
     
     # Feet
-    draw.ellipse((cx-70, cy+110, cx-50, cy+130), fill=body_color)
-    draw.ellipse((cx+50, cy+110, cx+70, cy+130), fill=body_color)
+    foot_size = leg_width + 5
+    draw.ellipse((cx-leg_spread-30, cy+110, cx-leg_spread-10, cy+130), fill=body_color)
+    draw.ellipse((cx+leg_spread+10, cy+110, cx+leg_spread+30, cy+130), fill=body_color)
     
     img = img.filter(ImageFilter.GaussianBlur(1))
     if index is not None:
@@ -794,24 +905,34 @@ def create_void_hopper(index=None):
     return img
 
 def create_abyssal_jelly(index=None):
+    seed_from_index(index, "abyssal_jelly")
+    
+    # Vary jellyfish properties
+    jelly_color = get_color_variant(index, (100, 120, 180, 150), 40)
+    bell_size = get_count_variant(index, 100, 80, 130)
+    num_tentacles = get_count_variant(index, 8, 6, 12)
+    tentacle_length = get_count_variant(index, 10, 8, 14)
+    tentacle_width = get_count_variant(index, 8, 5, 12)
+    wave_frequency = get_size_variant(index, 0.5, 0.5)
+    
     width, height = 500, 600
     img = Image.new('RGBA', (width, height), (0,0,0,0))
     draw = ImageDraw.Draw(img)
     cx, cy = width//2, 150
-    jelly_color = (100, 120, 180, 150)
     
-    # Bell/dome
-    draw.pieslice((cx-100, cy-80, cx+100, cy+80), 0, 180, fill=jelly_color)
+    # Bell/dome with varied size
+    draw.pieslice((cx-bell_size, cy-bell_size*0.8, cx+bell_size, cy+bell_size*0.8), 0, 180, fill=jelly_color)
     
-    # Tentacles
-    for i in range(8):
-        x_start = cx + (i-4) * 25
+    # Tentacles with varied count, length, and wave
+    tentacle_spacing = (bell_size * 2) // (num_tentacles - 1)
+    for i in range(num_tentacles):
+        x_start = cx - bell_size + i * tentacle_spacing
         points = []
-        for j in range(10):
-            x = x_start + math.sin(j * 0.5) * 15
+        for j in range(tentacle_length):
+            x = x_start + math.sin(j * wave_frequency) * 15
             y = cy + 80 + j * 40
             points.append((x, y))
-        draw.line(points, fill=jelly_color, width=8)
+        draw.line(points, fill=jelly_color, width=tentacle_width)
     
     img = img.filter(ImageFilter.GaussianBlur(2))
     if index is not None:
